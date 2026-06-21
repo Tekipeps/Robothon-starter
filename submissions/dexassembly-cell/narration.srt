@@ -1,15 +1,15 @@
 1
 00:00:15,699 --> 00:00:25,100
-Eye-in-hand inspection: the part is raised to the wrist camera and held steady, then sorted into its bin.
+Quality station: the part is raised to the wrist's eye-in-hand camera (inset) for inspection, then binned.
 
 2
 00:00:25,100 --> 00:00:27,933
-A single extended finger presses the spring-loaded inspection button, confirmed by its displacement sensor.
+Functional test: a single extended finger presses the spring-loaded diagnostic button, confirmed by its sensor.
 
 3
 00:00:27,933 --> 00:00:32,933
-Force-aware inspection: the hand elastically deflects the deformable connector cable while the wrist F/T sensor monitors load.
+Harness inspection: the hand elastically flexes the wiring cable while the 6-axis wrist force/torque sensor monitors load.
 
 4
 00:00:32,933 --> 00:00:42,233
-Peg-in-hole assembly: the connector cube is grasped, carried, and seated into the wide-mouth assembly socket.
+Connector seating: the high-voltage connector is grasped, carried, and seated into its receptacle -- all through real contact.

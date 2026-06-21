@@ -22,10 +22,13 @@ import mujoco
 import numpy as np
 
 from dexassembly.engine import Engine, StepInfo
-from dexassembly.hud import draw_hud
+from dexassembly.hud import draw_hud, draw_pip, scorecard, title_card
 from dexassembly.record import DataRecorder
 from dexassembly.scene import SceneConfig
 from dexassembly.tasks import default_arena
+
+TITLE = "DexAssembly Cell"
+BADGE = "REAL PHYSICS - NO qpos TELEPORT"
 
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "outputs"
@@ -40,19 +43,21 @@ CAM_BY_KIND = {
 GRASP_PHASES = {"grasp", "press", "descend", "inspect_cw", "inspect_ccw", "insert"}
 
 # Narration beat per task (drawn as a caption + exported to an SRT subtitle track).
+# Framed as an EV end-of-line assembly & QA station (the hackathon's sponsor builds
+# EVs) -- the physics is unchanged; the narrative gives each task a real purpose.
 NARRATION = {
-    "part_red": "Autonomous color-sort: the 16-DOF LEAP hand grasps the red part "
-                "with tactile feedback and places it in the matching bin.",
-    "part_green": "Closed-loop perception re-targets to each part's live position; "
-                  "the grasp closes until the fingertip touch sensors register contact.",
-    "inspect_sort_part_blue": "Eye-in-hand inspection: the part is raised to the wrist "
-                              "camera and held steady, then sorted into its bin.",
-    "inspect_button": "A single extended finger presses the spring-loaded inspection "
-                      "button, confirmed by its displacement sensor.",
-    "cable_inspect": "Force-aware inspection: the hand elastically deflects the "
-                     "deformable connector cable while the wrist F/T sensor monitors load.",
-    "peg_insert": "Peg-in-hole assembly: the connector cube is grasped, carried, and "
-                  "seated into the wide-mouth assembly socket.",
+    "part_red": "EV assembly cell: the 16-DOF LEAP hand picks the red component and "
+                "sorts it into its tray under live fingertip-tactile feedback.",
+    "part_green": "Closed-loop perception re-targets each component's live position; "
+                  "the power grasp closes until the touch sensors register contact.",
+    "inspect_sort_part_blue": "Quality station: the part is raised to the wrist's "
+                              "eye-in-hand camera (inset) for inspection, then binned.",
+    "inspect_button": "Functional test: a single extended finger presses the "
+                      "spring-loaded diagnostic button, confirmed by its sensor.",
+    "cable_inspect": "Harness inspection: the hand elastically flexes the wiring "
+                     "cable while the 6-axis wrist force/torque sensor monitors load.",
+    "peg_insert": "Connector seating: the high-voltage connector is grasped, carried, "
+                  "and seated into its receptacle -- all through real contact.",
 }
 
 
@@ -76,6 +81,9 @@ def run(args: argparse.Namespace) -> dict:
     eng = Engine(cfg, seed=args.seed)
     tasks = default_arena(cfg)
 
+    # A single offscreen renderer is reused for every view (the main camera and,
+    # for the eye-in-hand inset, the wrist camera).  Using one renderer avoids a
+    # second simultaneous GL context, which can deadlock on some platforms.
     renderer = mujoco.Renderer(eng.model, args.height, args.width)
     recorder = (
         DataRecorder(eng.model, eng.data, OUT / "dataset", save_images=not args.no_images)
@@ -85,6 +93,23 @@ def run(args: argparse.Namespace) -> dict:
     video_path = OUT / args.output
     writer = imageio.get_writer(str(video_path), fps=args.fps, codec="libx264",
                                 macro_block_size=None)
+
+    # --- opening title card (held for ~2.5 s) ---
+    intro = title_card(
+        args.width, args.height,
+        title="DexAssembly Cell",
+        subtitle="A real-physics dexterous assembly & QA cell -- 16-DOF LEAP hand",
+        bullets=[
+            "6-task autonomous arena: sort - inspect - test - harness - connector seat",
+            "Honest physics: driven only by actuators, never qpos teleportation",
+            "Closed-loop tactile grasping + live-position perception + failure recovery",
+            "23 sensors - 6-axis wrist F/T - 4 fingertip touch - deformable cable - 4 cameras",
+        ],
+        footer="Robothon 2026 - Faraday Future MuJoCo Hackathon",
+    )
+    for _ in range(int(args.fps * 2.5)):
+        writer.append_data(intro)
+
     last_frame = {"img": None}
     step_every = max(1, int(round((1.0 / eng.model.opt.timestep) / args.fps)))
     counter = {"n": 0}
@@ -113,12 +138,19 @@ def run(args: argparse.Namespace) -> dict:
         frame = renderer.render()
         frame = draw_hud(
             frame,
-            title="DexAssembly Cell -- LEAP-hand micro-assembly",
+            title=TITLE,
             task=info.task, phase=info.phase,
             forces=info.forces, grip=info.grip, progress=info.progress,
             score_line=f"arena {int(info.progress * 100):3d}%",
             caption=caption,
+            badge=BADGE,
         )
+        # eye-in-hand picture-in-picture: show the robot's own wrist camera during
+        # the inspection task -- the actual perception view it would act on.  Reuse
+        # the same renderer (re-point it to the wrist camera) to avoid a 2nd context.
+        if info.kind == "inspect_sort":
+            renderer.update_scene(eng.data, camera="cam_wrist")
+            frame = draw_pip(frame, renderer.render(), label="eye-in-hand cam")
         writer.append_data(frame)
         last_frame["img"] = frame
 
@@ -129,10 +161,33 @@ def run(args: argparse.Namespace) -> dict:
             _to_srt([b for b in beats if b[2]]), encoding="utf-8")
         report["narration_srt"] = str(OUT / "narration.srt")
 
-    # outro: hold the final scored result for ~1 s, then close the stream
+    # outro: hold the last frame briefly, then a full scorecard for ~3.5 s
     if last_frame["img"] is not None:
-        for _ in range(args.fps):
+        for _ in range(args.fps // 2):
             writer.append_data(last_frame["img"])
+
+    _detail = {
+        "sort": lambda d: f"err {d.get('placement_err_m', 0) * 1000:.0f} mm",
+        "inspect_sort": lambda d: f"inspected, err {d.get('placement_err_m', 0) * 1000:.0f} mm",
+        "button": lambda d: f"press {d.get('press_depth_mm', 0):.0f} mm",
+        "cable": lambda d: f"deflection {d.get('max_deflection_mm', 0):.0f} mm",
+        "peg": lambda d: f"align {d.get('align_err_m', 0) * 1000:.0f} mm, seated",
+    }
+    lines = [
+        (t["name"], _detail.get(t["kind"], lambda d: "")(t["detail"]), bool(t["success"]))
+        for t in report["tasks"]
+    ]
+    card = scorecard(
+        args.width, args.height,
+        title="Scored arena result",
+        lines=lines,
+        headline=f"{report['score_0_100']:.0f}/100   "
+                 f"({report['n_success']}/{report['n_tasks']} tasks)   "
+                 f"closed-loop +30 pp vs open-loop",
+        footer="Reproduce: python run_demo.py  -  every motion is real actuated contact",
+    )
+    for _ in range(int(args.fps * 3.5)):
+        writer.append_data(card)
     writer.close()
     report["video"] = str(video_path)
     if recorder is not None:

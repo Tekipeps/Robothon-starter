@@ -317,8 +317,8 @@ def default_arena(cfg: SceneConfig, adaptive: bool = True) -> list[Task]:
     """The full graded arena.
 
     Pick-and-sort the red and green parts, inspect-and-sort the blue part with an
-    in-hand wrist reorientation, press the inspection button, force-inspect the
-    deformable cable, and finish with the peg-in-hole assembly.
+    eye-in-hand camera lift, functional-test the diagnostic button, force-inspect
+    the deformable harness cable, and finish by seating the connector (peg-in-hole).
 
     ``adaptive`` toggles live-position perception (closed-loop) vs fixed nominal
     targeting (open-loop baseline) for the grasp tasks — used by the ablation.

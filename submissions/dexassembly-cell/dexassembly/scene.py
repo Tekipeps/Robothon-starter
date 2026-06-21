@@ -195,9 +195,12 @@ def build_spec(config: SceneConfig | None = None) -> mujoco.MjSpec:
     # the wrist, i.e. the reaction of everything the hand touches).
     wrist.add_site(name="wrist_ft", pos=[0, 0, -0.012], size=[0.005, 0.005, 0.005],
                    type=mujoco.mjtGeom.mjGEOM_BOX, group=4)
-    # Eye-in-hand camera looking down through the palm.
-    wrist.add_camera(name="cam_wrist", pos=[0.0, 0.0, -0.02],
-                     xyaxes=[1, 0, 0, 0, -1, 0])
+    # Eye-in-hand camera: mounted to the side of the wrist and angled inward/down
+    # so it frames the grasp centre (and any held part) from a short standoff,
+    # like a real wrist-mounted inspection camera.  (A camera placed on the palm
+    # axis looking straight down only sees the back of the hand.)
+    wrist.add_camera(name="cam_wrist", pos=[0.10, 0.0, -0.02],
+                     xyaxes=[0.0, 1.0, 0.0, -0.707, 0.0, 0.707], fovy=58)
 
     # Attach the LEAP hand so the palm faces down (fingers point toward -z).
     hand = mujoco.MjSpec.from_file(str(LEAP_XML))

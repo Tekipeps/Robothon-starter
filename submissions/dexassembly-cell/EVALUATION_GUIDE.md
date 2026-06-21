@@ -20,11 +20,14 @@ python -m pytest tests -q                         # test suite (no rendering)
 ## The cell in one paragraph
 
 A 16-DOF **LEAP dexterous hand** on a 4-axis Cartesian gantry runs a six-task
-assembly/inspection arena: pick-and-sort three parts into colour bins (one with an
-**eye-in-hand inspection lift**), press a spring-loaded **inspection button**,
-**force-inspect a deformable cable**, and perform a **peg-in-hole assembly** — all
-autonomously, under a closed-loop controller, with a 6-axis wrist F/T sensor, four
-fingertip touch sensors, and four cameras.
+**EV end-of-line assembly & QA** arena (themed; the physics is general-purpose):
+pick-and-sort three components into trays (one with an **eye-in-hand inspection
+lift**, shown as a live picture-in-picture in the demo), functional-test a
+spring-loaded **diagnostic button**, **force-inspect a deformable wiring-harness
+cable**, and **seat a connector** into its receptacle — all autonomously, under a
+closed-loop controller, with a 6-axis wrist F/T sensor, four fingertip touch
+sensors, and four cameras. Crucially, the robot is driven **only** through
+actuators (`data.ctrl`); the code never teleports joints via `qpos`.
 
 ## Rubric alignment
 

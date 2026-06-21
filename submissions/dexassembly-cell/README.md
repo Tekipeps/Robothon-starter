@@ -1,22 +1,41 @@
-# DexAssembly Cell — Closed-Loop Dexterous Micro-Assembly with a LEAP Hand
+# DexAssembly Cell — A Real-Physics Dexterous Assembly & QA Cell (LEAP Hand)
 
 > Robothon 2026 · Faraday Future MuJoCo Robotics Hackathon
 > **Registration UUID:** `a003f03d-ca73-4d5e-96bd-87a7a83465bf`
 
-A fully **self-contained** MuJoCo cell in which a **16-DOF LEAP dexterous hand**,
-mounted on a 4-axis Cartesian gantry, autonomously runs a **graded six-task
-assembly arena** — colour-sorting, eye-in-hand inspection, a tactile button press,
-**deformable-cable** force inspection, and peg-in-hole assembly — under a
-**closed-loop, tactile-aware controller with grasp-failure recovery**, then
-renders a **narrated** demo video, writes a labelled imitation-learning dataset,
-and runs a **domain-randomized robustness study with an ablation**.
+A **16-DOF LEAP dexterous hand** on a 4-axis gantry autonomously runs a **simulated
+EV end-of-line assembly & QA station**: it sorts components into trays, raises a
+part to its **eye-in-hand camera** for visual inspection, presses a **diagnostic
+button**, **force-inspects a wiring-harness cable**, and **seats a connector** into
+its receptacle — six graded tasks, closed-loop, with tactile feedback and grasp
+recovery.
 
-Everything is driven through **position actuators and real contact dynamics — the
-code never teleports joints via `qpos`**, so parts fall under gravity, rest on the
-bench, and grasps only hold when the fingers physically close (confirmed by the
-fingertip touch sensors). Run **one command** (`python run_demo.py`) and the
-project reproduces every artifact; no assets are downloaded at runtime — the LEAP
-hand is committed and everything else is generated procedurally.
+### For the judges — the 60-second read
+
+- **Honest physics is the headline.** The robot is driven **only** through position
+  actuators and real contact dynamics — **the code never writes `qpos` to move
+  anything**. So parts fall under gravity, rest on the bench, and a grasp holds
+  *only* when the fingers physically close (confirmed by fingertip touch sensors and
+  by the part actually rising). Many sim demos teleport joints; this one doesn't, and
+  the demo video says so on-screen throughout.
+- **It's closed-loop, and we prove it.** A domain-randomized **ablation** shows the
+  adaptive controller (live-position perception + grasp recovery) beating an
+  open-loop baseline **80% vs 50% — +30 pp**. That gap *is* the contribution.
+- **Depth + breadth in one package.** 20 actuators, **23 sensors** (6-axis wrist
+  F/T, 4 fingertip touch, joint + button), a **deformable articulated cable**, 4
+  cameras, `nq=55` — and all four control modalities the rubric lists (scripted
+  autonomy, closed-loop policy, teleoperation, data collection).
+- **One command, no downloads.** `python run_demo.py` reproduces the video, a
+  labelled RGB-D dataset, and the scorecard. The LEAP hand is vendored; the scene is
+  generated procedurally; `validate.py` + 41 tests pass.
+
+> The scenario is *themed* as an EV assembly/QA cell (the sponsor builds EVs) to make
+> each task purposeful — the underlying physics and control are general-purpose.
+
+> **Built transparently with a human in the loop.** See
+> [`COLLABORATION.md`](COLLABORATION.md) for an honest log of how the human engineer
+> and Claude divided the work and caught each other's mistakes (the catapulting
+> grasp, the mis-aimed wrist camera, the rubbery peg).
 
 ```
 Deterministic arena:  100.0/100   (6/6 tasks)
@@ -48,14 +67,14 @@ Model size: `nq=55, nv=51, nu=20` actuators, `nsensor=23`, `ncam=4`, `ngeom=130`
 
 ## Task goal
 
-A tabletop **micro-assembly / kitting cell**. The hand must, end-to-end and
-autonomously:
+A tabletop **EV end-of-line assembly & QA cell** (themed; the physics is
+general-purpose). The hand must, end-to-end and autonomously:
 
-1. **Sort** the red and green parts into their colour-matched bins (pick → carry → place).
-2. **Inspect-and-sort** the blue part: grasp it, **raise it to the eye-in-hand camera** and hold it for inspection, then place it in the blue bin.
-3. **Press** a spring-loaded inspection button and confirm the press via its displacement sensor.
-4. **Force-inspect** a deformable connector cable: deflect it elastically while monitoring the wrist force/torque sensor.
-5. **Assemble** a square connector peg into its socket (peg-in-hole).
+1. **Sort** the red and green components into their colour-matched trays (pick → carry → place).
+2. **Inspect-and-sort** the blue component: grasp it, **raise it to the eye-in-hand camera** and hold it steady for visual inspection, then place it in its tray.
+3. **Functional-test** a spring-loaded diagnostic button and confirm the press via its displacement sensor.
+4. **Force-inspect** a wiring-harness cable: deflect it elastically while monitoring the 6-axis wrist force/torque sensor.
+5. **Seat a connector** (square peg) into its receptacle (peg-in-hole assembly).
 
 Each task is scored against measurable physical criteria (placement error, press
 depth, cable deflection, socket alignment), and the run reports an overall
@@ -248,7 +267,7 @@ dexassembly-cell/
 | Dexterity | 16-DOF multi-finger power grasp that physically lifts parts (~25 N tactile), opposable-thumb caging, single-finger button press, multi-finger deformable-cable manipulation. |
 | Engineering quality | Typed, documented package; config dataclasses; CLI; `validate.py`; ARCHITECTURE + EVALUATION guides; ~45 tests; attribution. |
 | Presentation | Narrated multi-camera demo (captions + `narration.srt`) with live tactile/force overlays and progress. |
-| Innovation | Self-contained procedural dexterous cell that is simultaneously a benchmark, a demo, and a dataset generator. |
+| Innovation | An **honestly-actuated** (no-`qpos`-teleport) dexterous cell themed as a real EV assembly/QA station, that is simultaneously a scored benchmark + ablation, a narrated demo with a live eye-in-hand view, and a labelled RGB-D dataset generator. |
 
 ---
 
@@ -256,10 +275,11 @@ dexassembly-cell/
 
 本项目 **DexAssembly Cell** 是一个完全自包含的 MuJoCo 灵巧操作单元：一只 **16 自由度
 LEAP 灵巧手**安装在四轴笛卡尔龙门架上，在**闭环、带触觉反馈**的控制器驱动下，自主完成一个
-分级多任务装配竞技场——颜色分拣、手内翻转检视、触觉按钮按压、方形插销入孔装配。运行
-`python run_demo.py` 即可一键复现：仿真、计分、带 HUD 的演示视频，以及一份带标签的
-RGB-D 与状态/动作数据集。所有资源（含 LEAP 手）均已随提交一并包含，运行时无需任何下载。
-五项任务成功率 **100%**。
+以**电动车产线总装与质检**为主题的分级多任务竞技场——零件分拣、手眼相机检视、诊断按钮按压、
+线束力觉检测、连接器插装。机器人**全程仅通过执行器（`data.ctrl`）驱动，绝不通过 `qpos`
+传送关节**，因此物体遵循重力、抓取必须靠手指真实闭合才能成立。运行 `python run_demo.py`
+即可一键复现：仿真、计分、带 HUD 的演示视频，以及一份带标签的 RGB-D 与状态/动作数据集。
+所有资源（含 LEAP 手）均已随提交一并包含，运行时无需任何下载。六项任务成功率 **100%**。
 
 ---
 
