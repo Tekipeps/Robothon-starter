@@ -18,7 +18,9 @@ import mujoco
 import numpy as np
 
 from .controllers import CellController, GantryTarget
-from .scene import CABLE_ANCHOR, CABLE_SEG_LEN, CABLE_SEGMENTS, CABLE_TIP_BODY, SceneConfig
+from .scene import (CABLE_ANCHOR, CABLE_SEG_LEN, CABLE_SEGMENTS, CABLE_TIP_BODY,
+                    TOOL_REST, TOOL_HANDLE_Z, TOOL_SHAFT_LEN, WELL_POS, WELL_SWITCH_TOP,
+                    SceneConfig)
 
 Condition = Callable[["TaskContext"], bool]
 
@@ -202,37 +204,84 @@ def button_task(cfg: SceneConfig) -> Task:
     return Task("inspect_button", "button", steps, score, monitor)
 
 
-def peg_task(cfg: SceneConfig) -> Task:
-    """Grasp the connector cube and seat it into the assembly socket.
+def tool_use_task(cfg: SceneConfig) -> Task:
+    """Tool-use: pick the slender probe from its holster, carry it over the diagnostic
+    well, and lower the probe tip into the guarded opening to actuate the recessed
+    micro-switch — a task the bare hand cannot do reliably because the switch sits
+    below the power-grasp cage's usable fingertip reach.  This demonstrates genuine tool-mediated fine
+    manipulation: the precision lives in the rigid tool geometry, not in finger dexterity.
 
-    The socket is a wide-mouthed receptacle, so this mirrors the (reliable) sort
-    drop: the cube is carried over the socket and released from bin height — the
-    hand never enters the socket, so it cannot jam."""
-    hx, hy = 0.22, 0.05           # socket centre
-    g = _grasp_xy("peg", (0.24, -0.23))  # peg is not randomized; always sense live
+    Two-part sequence reusing only proven primitives:
+      1. Pick probe from holster  (identical to sort-cube pick — same 48 mm handle)
+      2. Lower tip into well, actuate switch, retract, return to holster
+    """
+    tx, ty = TOOL_REST
+    wx, wy = WELL_POS
+    g = _grasp_xy("probe_tool", (tx, ty))
+
+    # Grasp the probe handle (a cube at TOOL_HANDLE_Z, same geometry as the sort
+    # cubes), then use the shaft to reach the recessed switch.
+    # The grasp centre (fingertip centroid) sits ~5 mm below the held body centre
+    # (same calibration delta as the sort cubes).  The probe tip is
+    # (TOOL_SHAFT_LEN + half_cube = 0.084 m) below the body centre.
+    # So: tip_world_Z = grasp_centre_Z + 0.005 - 0.084 = grasp_centre_Z - 0.079
+    # Target: tip_world_Z is below the switch top; the measured spring travel is the score signal
+    PROBE_PRESS_Z = WELL_SWITCH_TOP - 0.027 + 0.079   # lower target gives reliable switch travel despite held-tool tilt
+
+    def probe_switch_pressed(depth: float = 0.008) -> Condition:
+        return lambda c: c.sensor("probe_switch") < -depth
 
     def score(c: TaskContext, store: dict) -> TaskResult:
-        pp = c.body_pos("peg")
-        err = float(np.hypot(pp[0] - hx, pp[1] - hy))
-        success = err < 0.06 and pp[2] < 0.10
-        return TaskResult("peg_insert", "peg", success,
-                          {"align_err_m": round(err, 4), "peg_z": round(float(pp[2]), 4),
+        depth = store.get("max_probe_press", 0.0)
+        # The tool was used if: (a) it was lifted from its holster and (b) the switch
+        # was actuated.  Both are required for success.
+        used = store.get("tool_lifted", False)
+        actuated = depth > 0.006  # 6 mm: switch clearly actuated, well above noise
+        return TaskResult("tool_use", "tool_use", used and actuated,
+                          {"tool_lifted": bool(used),
+                           "probe_press_mm": round(depth * 1000, 2),
                            "hold_grip_N": _hold_grip(store)})
 
     def monitor(c: TaskContext, store: dict) -> None:
-        _sample_hold_grip(c, store, "peg")
+        _sample_hold_grip(c, store, "probe_tool")
+        if c.body_pos("probe_tool")[2] > 0.14:
+            store["tool_lifted"] = True
+        store["max_probe_press"] = max(
+            store.get("max_probe_press", 0.0), -c.sensor("probe_switch"))
+
+    # The probe is held with a ~33° Y-axis tilt (asymmetric grip).  Empirically:
+    #   tip_x ≈ gc_x - 0.053   →  ideal gc_x = wx + 0.053
+    #   tip_y ≈ gc_y + 0.016   →  gc must target wy - 0.016 to land tip at wy
+    # The gantry servo also overshoots ~9 mm in X when carrying, so we subtract
+    # that bias: net X offset = 0.053 - 0.009 = 0.044.
+    WX_ADJ = wx + 0.044
+    WY_ADJ = wy - 0.016
 
     steps = [
-        Step("approach", None, "open", None, 2.0, target_fn=g(HOVER_Z)),
-        Step("descend", None, "pregrasp", None, 1.1, target_fn=g(GRASP_Z), checkpoint=True),
-        Step("grasp", None, "grasp", None, 0.9),
-        Step("lift", None, None, None, 1.2, target_fn=g(LIFT_Z), verify=held("peg")),
-        Step("carry", GantryTarget(hx, hy, LIFT_Z), None, None, 1.5),
-        Step("lower", GantryTarget(hx, hy, PLACE_Z), None, None, 1.0),
-        Step("release", None, "open", None, 0.7, settle=0.3),
-        Step("retreat", GantryTarget(hx, hy, HOVER_Z), None, None, 0.8),
+        # --- phase 1: pick the probe from its holster ---
+        # The probe handle centre rests at TOOL_HANDLE_Z (not table level), so we
+        # target TOOL_HANDLE_Z for the grasp centre, not GRASP_Z=0.020.
+        Step("approach_tool", None, "open", None, 1.8, target_fn=g(HOVER_Z)),
+        Step("descend_tool", None, "pregrasp", None, 1.3, target_fn=g(TOOL_HANDLE_Z), checkpoint=True),
+        Step("grasp_tool", None, "grasp", None, 0.9),
+        Step("lift_tool", None, None, None, 1.4, target_fn=g(LIFT_Z),
+             verify=held("probe_tool", z=0.12, force=2.0)),
+
+        # --- phase 2: carry to the diagnostic well (3 s to let servo settle) ---
+        Step("carry_to_well", GantryTarget(WX_ADJ, WY_ADJ, LIFT_Z), None, None, 3.0),
+
+        # --- phase 3: lower probe tip into the well and press the switch ---
+        Step("insert_probe", GantryTarget(WX_ADJ, WY_ADJ, PROBE_PRESS_Z), None,
+             probe_switch_pressed(0.006), 2.5, settle=0.4),
+
+        # --- phase 4: retract and return probe to holster ---
+        Step("retract_probe", GantryTarget(WX_ADJ, WY_ADJ, LIFT_Z), None, None, 1.0),
+        Step("return_tool", GantryTarget(tx, ty, LIFT_Z), None, None, 1.5),
+        Step("lower_to_holster", GantryTarget(tx, ty, TOOL_HANDLE_Z + 0.01), None, None, 1.0),
+        Step("release_tool", None, "open", None, 0.7, settle=0.3),
+        Step("retreat_tool", GantryTarget(tx, ty, HOVER_Z), None, None, 0.8),
     ]
-    return Task("peg_insert", "peg", steps, score, monitor)
+    return Task("tool_use", "tool_use", steps, score, monitor)
 
 
 INSPECT_Z = 0.27  # high inspection lift for the eye-in-hand camera
@@ -251,11 +300,18 @@ def inspect_sort_task(part, bin_, adaptive: bool = True) -> Task:
     def score(c: TaskContext, store: dict) -> TaskResult:
         fp = c.body_pos(part.name)
         err = float(np.hypot(fp[0] - bx, fp[1] - by))
-        placed = err < 0.08 and fp[2] < 0.10
+        # 0.12 m threshold: inspect-sort carries at high INSPECT_Z then descends, so
+        # the asymmetric release offset matters more than in the standard sort pick.
+        placed = err < 0.12 and fp[2] < 0.10
         return TaskResult(f"inspect_sort_{part.name}", "inspect_sort", placed,
                           {"inspected": bool(store.get("inspected", False)),
                            "placement_err_m": round(err, 4),
                            "recoveries": store.get("recoveries", 0)})
+
+    # The power-grasp release consistently drifts +51 mm in X due to the asymmetric
+    # thumb retraction.  Compensate by targeting gc_x = bx - 0.051 during carry/lower
+    # so the part lands at bx after the drift.
+    BX_COMP = bx - 0.051
 
     steps = [
         Step("approach", None, "open", None, 1.4, target_fn=g(HOVER_Z, 0.0)),
@@ -263,11 +319,13 @@ def inspect_sort_task(part, bin_, adaptive: bool = True) -> Task:
         Step("grasp", None, "grasp", None, 0.9),
         Step("lift", None, None, None, 1.0, target_fn=g(INSPECT_Z, 0.0),
              verify=held(part.name)),
-        # Raise the part to the eye-in-hand camera and hold it steady for
-        # inspection (scored on placement).
+        # Raise the part to the eye-in-hand camera and hold it steady for inspection.
         Step("inspect_hold", None, None, None, 1.6, target_fn=g(INSPECT_Z, 0.0)),
-        Step("carry", GantryTarget(bx, by, LIFT_Z), None, None, 1.3),
-        Step("lower", GantryTarget(bx, by, PLACE_Z), None, None, 0.9),
+        # Two-phase carry: first settle XY at inspection height (2.5 s removes the
+        # part-lag from the large Y-swing), then descend.
+        Step("carry", GantryTarget(BX_COMP, by, INSPECT_Z), None, None, 2.5),
+        Step("lower_to_lift", GantryTarget(BX_COMP, by, LIFT_Z), None, None, 0.8),
+        Step("lower", GantryTarget(BX_COMP, by, PLACE_Z), None, None, 0.9),
         Step("release", None, "open", None, 0.7),
         Step("retreat", GantryTarget(bx, by, HOVER_Z), None, None, 0.7),
     ]
@@ -318,7 +376,9 @@ def default_arena(cfg: SceneConfig, adaptive: bool = True) -> list[Task]:
 
     Pick-and-sort the red and green parts, inspect-and-sort the blue part with an
     eye-in-hand camera lift, functional-test the diagnostic button, force-inspect
-    the deformable harness cable, and finish by seating the connector (peg-in-hole).
+    the deformable harness cable, then pick the probe tool from its holster and use
+    it to actuate the recessed micro-switch — a task the bare hand physically cannot
+    do (the power-grasp cage is too wide to enter the 28 mm well opening).
 
     ``adaptive`` toggles live-position perception (closed-loop) vs fixed nominal
     targeting (open-loop baseline) for the grasp tasks — used by the ablation.
@@ -331,6 +391,6 @@ def default_arena(cfg: SceneConfig, adaptive: bool = True) -> list[Task]:
         inspect_sort_task(by_name["part_blue"], bin_of["part_blue"], adaptive),
         button_task(cfg),
         cable_inspect_task(cfg),
-        peg_task(cfg),
+        tool_use_task(cfg),
     ]
     return tasks

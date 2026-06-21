@@ -3,17 +3,17 @@
   "n_success": 6,
   "success_rate": 1.0,
   "score_0_100": 100.0,
-  "sim_time_s": 43.1,
-  "wall_time_s": 1054.28,
+  "sim_time_s": 49.75,
+  "wall_time_s": 646.08,
   "tasks": [
     {
       "name": "part_red",
       "kind": "sort",
       "success": "True",
       "detail": {
-        "placement_err_m": 0.0126,
+        "placement_err_m": 0.0153,
         "final_z": 0.0359,
-        "hold_grip_N": 22.92,
+        "hold_grip_N": 28.64,
         "recoveries": 0
       }
     },
@@ -34,7 +34,7 @@
       "success": "True",
       "detail": {
         "inspected": true,
-        "placement_err_m": 0.0627,
+        "placement_err_m": 0.0693,
         "recoveries": 0
       }
     },
@@ -43,7 +43,7 @@
       "kind": "button",
       "success": true,
       "detail": {
-        "press_depth_mm": 18.92
+        "press_depth_mm": 18.71
       }
     },
     {
@@ -56,25 +56,25 @@
       }
     },
     {
-      "name": "peg_insert",
-      "kind": "peg",
-      "success": "True",
+      "name": "tool_use",
+      "kind": "tool_use",
+      "success": true,
       "detail": {
-        "align_err_m": 0.0394,
-        "peg_z": 0.0479,
-        "hold_grip_N": 29.51
+        "tool_lifted": true,
+        "probe_press_mm": 10.31,
+        "hold_grip_N": 27.44
       }
     }
   ],
   "narration_srt": "C:\\Users\\Tekena\\Documents\\learning\\Robothon-starter\\submissions\\dexassembly-cell\\outputs\\narration.srt",
   "video": "C:\\Users\\Tekena\\Documents\\learning\\Robothon-starter\\submissions\\dexassembly-cell\\outputs\\dexassembly_demo.mp4",
   "dataset": {
-    "n_samples": 2055,
+    "n_samples": 2388,
     "sample_hz": 50.0,
     "image_hz": 3.0,
-    "n_images": 125,
-    "nq": 55,
-    "nv": 51,
+    "n_images": 145,
+    "nq": 56,
+    "nv": 52,
     "nu": 20,
     "fields": {
       "qpos": "generalized positions (gantry, hand, free objects)",

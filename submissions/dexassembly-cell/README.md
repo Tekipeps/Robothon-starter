@@ -6,8 +6,7 @@
 A **16-DOF LEAP dexterous hand** on a 4-axis gantry autonomously runs a **simulated
 EV end-of-line assembly & QA station**: it sorts components into trays, raises a
 part to its **eye-in-hand camera** for visual inspection, presses a **diagnostic
-button**, **force-inspects a wiring-harness cable**, and **seats a connector** into
-its receptacle — six graded tasks, closed-loop, with tactile feedback and grasp
+button**, **force-inspects a wiring-harness cable**, and uses a slender **probe tool** to actuate a recessed diagnostic micro-switch — six graded tasks, closed-loop, with tactile feedback and grasp
 recovery.
 
 ### For the judges — the 60-second read
@@ -21,9 +20,9 @@ recovery.
 - **It's closed-loop, and we prove it.** A domain-randomized **ablation** shows the
   adaptive controller (live-position perception + grasp recovery) beating an
   open-loop baseline **80% vs 50% — +30 pp**. That gap *is* the contribution.
-- **Depth + breadth in one package.** 20 actuators, **23 sensors** (6-axis wrist
+- **Depth + breadth in one package.** 20 actuators, **24 sensors** (6-axis wrist
   F/T, 4 fingertip touch, joint + button), a **deformable articulated cable**, 4
-  cameras, `nq=55` — and all four control modalities the rubric lists (scripted
+  cameras, `nq=56` — and all four control modalities the rubric lists (scripted
   autonomy, closed-loop policy, teleoperation, data collection).
 - **One command, no downloads.** `python run_demo.py` reproduces the video, a
   labelled RGB-D dataset, and the scorecard. The LEAP hand is vendored; the scene is
@@ -35,16 +34,16 @@ recovery.
 > **Built transparently with a human in the loop.** See
 > [`COLLABORATION.md`](COLLABORATION.md) for an honest log of how the human engineer
 > and Claude divided the work and caught each other's mistakes (the catapulting
-> grasp, the mis-aimed wrist camera, the rubbery peg).
+> grasp, the mis-aimed wrist camera, the brittle peg concept that became the tool-use station).
 
 ```
 Deterministic arena:  100.0/100   (6/6 tasks)
-  [PASS] part_red                placement_err 25 mm, hold_grip 25 N
-  [PASS] part_green              placement_err 44 mm, hold_grip 23 N
-  [PASS] inspect_sort_part_blue  raised to eye-in-hand cam, placement_err 29 mm
+  [PASS] part_red                placement_err 15 mm, hold_grip 29 N
+  [PASS] part_green              placement_err 13 mm, hold_grip 28 N
+  [PASS] inspect_sort_part_blue  raised to eye-in-hand cam, placement_err 69 mm
   [PASS] inspect_button          press_depth 19 mm
-  [PASS] cable_inspect           cable deflection 89 mm
-  [PASS] peg_insert              align_err 1.4 mm, peg seated
+  [PASS] cable_inspect           cable deflection 89 mm, peak_wrist 362 N
+  [PASS] tool_use                probe press 10.3 mm, tool lifted, hold_grip 27 N
 
 Domain-randomized grasp study (±12 mm / ±15%, 30 grasps/mode):
   adaptive (closed-loop)   80.0%      open-loop baseline   50.0%      gain +30.0 pp
@@ -59,9 +58,9 @@ Domain-randomized grasp study (±12 mm / ±15%, 30 grasps/mode):
 | **End-effector** | LEAP Hand — 16 actuated DOF, 4 fingers (index/middle/ring + opposable thumb), per-joint position servos and joint-position sensors (MuJoCo Menagerie, MIT). |
 | **Arm** | Procedural 4-axis Cartesian gantry: prismatic X / Y / Z slides + a wrist-yaw hinge, each a position servo. Rock-solid, singularity-free reach over the bench. |
 | **Sensing** | 4 fingertip **touch sensors**, a **6-axis wrist force/torque sensor**, 16 hand joint encoders, a button-displacement sensor, and **4 cameras** (hero / top / side / eye-in-hand wrist). |
-| **Scene** | Instrumented bench with 3 colour bins, 3 sortable parts, a square connector peg + socket fixture, a spring-loaded inspection button, and a **deformable articulated cable** — all built in MJCF from primitives. |
+| **Scene** | Instrumented bench with 3 colour bins, 3 sortable parts, a spring-loaded inspection button, a recessed probe-actuated diagnostic switch, a graspable probe tool, and a **deformable articulated cable** — all built in MJCF from primitives. |
 
-Model size: `nq=55, nv=51, nu=20` actuators, `nsensor=23`, `ncam=4`, `ngeom=130`.
+Model size: `nq=56, nv=51, nu=20` actuators, `nsensor=23`, `ncam=4`, `ngeom=130`.
 
 ---
 
@@ -74,10 +73,10 @@ general-purpose). The hand must, end-to-end and autonomously:
 2. **Inspect-and-sort** the blue component: grasp it, **raise it to the eye-in-hand camera** and hold it steady for visual inspection, then place it in its tray.
 3. **Functional-test** a spring-loaded diagnostic button and confirm the press via its displacement sensor.
 4. **Force-inspect** a wiring-harness cable: deflect it elastically while monitoring the 6-axis wrist force/torque sensor.
-5. **Seat a connector** (square peg) into its receptacle (peg-in-hole assembly).
+5. **Use a tool**: grasp a slender probe from its holster and actuate a recessed diagnostic micro-switch that sits below the power-grasp cage's reliable fingertip reach.
 
 Each task is scored against measurable physical criteria (placement error, press
-depth, cable deflection, socket alignment), and the run reports an overall
+depth, cable deflection, probe-switch travel), and the run reports an overall
 success rate on a 0–100 scale.
 
 ---
@@ -89,7 +88,7 @@ The whole cell is generated through the **`mujoco.MjSpec`** API. The LEAP hand i
 loaded from its MJCF and **attached** to the wrist body via `frame.attach_body`,
 oriented (identity mount) so the palm's grasping face points down and the fingers
 curl **down + inward** to cage an object beneath the palm. Gantry slides, the
-bench, colour bins (tray + four walls), the peg/socket fixture, the spring-loaded
+bench, colour bins (tray + four walls), the probe-tool station, the spring-loaded
 button (slide joint with stiffness), cameras, lights, and **fingertip touch
 sensor sites** are all added programmatically. The builder also emits a static
 [`scene.xml`](scene.xml) for inspection in `python -m mujoco.viewer`.
@@ -145,7 +144,7 @@ camera — for perception/data use.)
 
 ## Core features
 
-- 16-DOF dexterous hand on a 4-DOF gantry, attached via `MjSpec` — **20 actuators, 23 sensors, 4 cameras**.
+- 16-DOF dexterous hand on a 4-DOF gantry, attached via `MjSpec` — **20 actuators, 24 sensors, 4 cameras**.
 - **Honest, fully-actuated physics** — control is *only* through `data.ctrl`; no `qpos` teleportation, so objects obey gravity and grasps hold through real contact.
 - **Closed-loop, tactile-aware** control: contact-triggered button press, live-position grasp targeting, runtime held-offset correction, and **grasp-failure detection + recovery**.
 - **Six-task graded arena** with quantitative per-task scoring and an aggregate 0–100 score.
@@ -270,9 +269,9 @@ is generated procedurally (no runtime downloads), and the run is deterministic.
 **2. Depth of MuJoCo use.** `MjSpec` programmatic build with the hand **attached**
 via `frame.attach_body`; a **deformable articulated cable** (6 hinge joints); a
 **6-axis wrist force/torque** sensor + **4 fingertip touch** sensors + a button
-displacement sensor (**23 sensors**); a spring-loaded **slide joint**; **elliptic
+displacement sensor (**24 sensors**); a spring-loaded **slide joint**; **elliptic
 friction cones** (`impratio`); **20 position-servo actuators**; **4 cameras**;
-`nq=55`. Control is **only** via `data.ctrl` — **never `qpos` teleportation**.
+`nq=56`. Control is **only** via `data.ctrl` — **never `qpos` teleportation**.
 *Verify:* [`dexassembly/scene.py`](dexassembly/scene.py), [`scene.xml`](scene.xml).
 
 **3. Task design.** A graded **six-task** EV assembly/QA arena (3× colour-sort, an

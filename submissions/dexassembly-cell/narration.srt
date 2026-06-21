@@ -1,15 +1,15 @@
 1
-00:00:15,699 --> 00:00:25,100
+00:00:15,699 --> 00:00:27,066
 Quality station: the part is raised to the wrist's eye-in-hand camera (inset) for inspection, then binned.
 
 2
-00:00:25,100 --> 00:00:27,933
+00:00:27,066 --> 00:00:29,866
 Functional test: a single extended finger presses the spring-loaded diagnostic button, confirmed by its sensor.
 
 3
-00:00:27,933 --> 00:00:32,933
+00:00:29,866 --> 00:00:34,900
 Harness inspection: the hand elastically flexes the wiring cable while the 6-axis wrist force/torque sensor monitors load.
 
 4
-00:00:32,933 --> 00:00:42,233
-Connector seating: the high-voltage connector is grasped, carried, and seated into its receptacle -- all through real contact.
+00:00:34,900 --> 00:00:48,766
+Tool use: the hand grasps a slender probe, carries it to a recessed diagnostic well, and actuates the micro-switch with the tool tip.

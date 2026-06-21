@@ -101,6 +101,10 @@
     <geom name="post_n" size="0.012 0.012 0.3" pos="-0.4 0.3 0.18" type="box" material="metal"/>
     <geom name="post_p" size="0.012 0.012 0.3" pos="0.4 0.3 0.18" type="box" material="metal"/>
     <geom name="rail" size="0.42 0.012 0.012" pos="0 0.3 0.47" type="box" material="metal"/>
+    <geom size="0.008 0.02 0.043" pos="0.26 -0.26 0.043" type="box" material="metal"/>
+    <geom size="0.008 0.02 0.043" pos="0.22 -0.26 0.043" type="box" material="metal"/>
+    <geom size="0.02 0.008 0.043" pos="0.24 -0.24 0.043" type="box" material="metal"/>
+    <geom size="0.02 0.008 0.043" pos="0.24 -0.28 0.043" type="box" material="metal"/>
     <camera name="cam_hero" pos="0.62 -0.62 0.42" quat="0.771688 0.507988 0.210415 0.319644"/>
     <camera name="cam_top" pos="0 0 0.85"/>
     <camera name="cam_side" pos="0.75 0 0.18" quat="0.547713 0.447225 0.447225 0.547713"/>
@@ -295,16 +299,22 @@
       <joint name="part_blue_free" type="free"/>
       <geom name="part_blue_geom" size="0.024 0.024 0.024" type="box" condim="4" friction="1.4 0.02 0.001" solimp="0.9 0.95 0.002" mass="0.03" rgba="0.3 0.5 0.95 1"/>
     </body>
-    <body name="hole_fixture" pos="0.22 0.05 0">
-      <geom name="hole_base" size="0.095 0.095 0.012" pos="0 0 0.012" type="box" material="metal"/>
-      <geom size="0.008 0.085 0.022" pos="0.085 0 0.046" type="box" material="metal"/>
-      <geom size="0.008 0.085 0.022" pos="-0.085 0 0.046" type="box" material="metal"/>
-      <geom size="0.085 0.008 0.022" pos="0 0.085 0.046" type="box" material="metal"/>
-      <geom size="0.085 0.008 0.022" pos="0 -0.085 0.046" type="box" material="metal"/>
+    <body name="probe_tool" pos="0.24 -0.26 0.11">
+      <joint name="probe_tool_free" type="free"/>
+      <geom name="probe_handle" size="0.024 0.024 0.024" type="box" condim="4" friction="1.4 0.02 0.001" solimp="0.9 0.95 0.002" mass="0.04" rgba="0.95 0.62 0.15 1"/>
+      <geom name="probe_shaft" size="0.005 0.03" pos="0 0 -0.054" type="cylinder" condim="4" friction="1 0.02 0.001" mass="0.012" material="metal"/>
+      <geom name="probe_tip" size="0.006" pos="0 0 -0.084" condim="4" friction="1 0.02 0.001" mass="0.004" rgba="0.85 0.2 0.2 1"/>
     </body>
-    <body name="peg" pos="0.24 -0.23 0.025">
-      <joint name="peg_free" type="free"/>
-      <geom name="peg_geom" size="0.024 0.024 0.024" type="box" condim="4" friction="1.4 0.02 0.001" solimp="0.9 0.95 0.002" mass="0.03" rgba="0.95 0.78 0.2 1"/>
+    <body name="diag_well" pos="0.2 0.05 0">
+      <geom name="diag_base" size="0.04 0.04 0.005" pos="0 0 0.005" type="box" material="metal"/>
+      <geom size="0.01 0.05 0.0275" pos="0.05 0 0.0275" type="box" material="metal"/>
+      <geom size="0.01 0.05 0.0275" pos="-0.05 0 0.0275" type="box" material="metal"/>
+      <geom size="0.05 0.01 0.0275" pos="0 0.05 0.0275" type="box" material="metal"/>
+      <geom size="0.05 0.01 0.0275" pos="0 -0.05 0.0275" type="box" material="metal"/>
+      <body name="diag_switch" pos="0 0 0.03">
+        <joint name="well_switch" pos="0 0 0" axis="0 0 1" type="slide" stiffness="30" range="-0.016 0" damping="3"/>
+        <geom name="diag_switch_geom" size="0.018 0.003" type="cylinder" condim="4" friction="1 0.02 0.001" mass="0.01" rgba="0.95 0.25 0.25 1"/>
+      </body>
     </body>
     <body name="button_housing" pos="-0.34 -0.24 0">
       <geom name="button_housing_geom" size="0.03 0.03 0.02" pos="0 0 0.02" type="box" material="metal"/>
@@ -403,6 +413,7 @@
     <jointpos joint="lh_th_axl" name="lh_th_axl_sensor"/>
     <jointpos joint="lh_th_mcp" name="lh_th_mcp_sensor"/>
     <jointpos joint="lh_th_ipl" name="lh_th_ipl_sensor"/>
+    <jointpos joint="well_switch" name="probe_switch"/>
     <jointpos joint="button_slide" name="button_press"/>
     <touch site="lh_if_ds_touch" name="lh_if_ds_force"/>
     <touch site="lh_mf_ds_touch" name="lh_mf_ds_force"/>
