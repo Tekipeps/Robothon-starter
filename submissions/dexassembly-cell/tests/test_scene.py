@@ -21,13 +21,13 @@ def _has(model, kind, name):
 
 def test_dof_and_actuator_counts(model):
     assert model.nu == 20
-    assert model.nq == 55
-    assert model.nv == 51
+    assert model.nq == 56
+    assert model.nv == 52
 
 
 def test_sensor_count(model):
-    # 16 hand jointpos + 4 touch + button + force + torque
-    assert model.nsensor == 23
+    # 16 hand jointpos + 4 touch + button + probe switch + force + torque
+    assert model.nsensor == 24
 
 
 def test_four_cameras(model):
@@ -68,9 +68,10 @@ def test_parts_and_bins(model):
                _has(model, mujoco.mjtObj.mjOBJ_GEOM, name), name
 
 
-def test_peg_and_socket(model):
-    assert _has(model, mujoco.mjtObj.mjOBJ_BODY, "peg")
-    assert _has(model, mujoco.mjtObj.mjOBJ_BODY, "hole_fixture")
+def test_tool_station(model):
+    assert _has(model, mujoco.mjtObj.mjOBJ_BODY, "probe_tool")
+    assert _has(model, mujoco.mjtObj.mjOBJ_BODY, "diag_well")
+    assert _has(model, mujoco.mjtObj.mjOBJ_SENSOR, "probe_switch")
 
 
 def test_deformable_cable_segments(model):

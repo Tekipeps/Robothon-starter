@@ -61,9 +61,9 @@ def main() -> int:
         def has(kind, name):
             return mujoco.mj_name2id(model, kind, name) >= 0
 
-        for s in ("wrist_force", "wrist_torque", "button_press"):
+        for s in ("wrist_force", "wrist_torque", "button_press", "probe_switch"):
             check(f"sensor present: {s}", has(mujoco.mjtObj.mjOBJ_SENSOR, s))
-        for b in ("lh_palm", "peg", "cable_seg_5", "part_red"):
+        for b in ("lh_palm", "probe_tool", "diag_well", "cable_seg_5", "part_red"):
             check(f"body present: {b}", has(mujoco.mjtObj.mjOBJ_BODY, b))
         n_touch = sum(has(mujoco.mjtObj.mjOBJ_SENSOR, f"lh_{f}_ds_force")
                       for f in ("if", "mf", "rf", "th"))

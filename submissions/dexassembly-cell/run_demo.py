@@ -38,7 +38,7 @@ CAM_BY_KIND = {
     "sort": "cam_hero",
     "inspect_sort": "cam_side",
     "button": "cam_side",
-    "peg": "cam_hero",
+    "tool_use": "cam_hero",
 }
 GRASP_PHASES = {"grasp", "press", "descend", "inspect_cw", "inspect_ccw", "insert"}
 
@@ -56,8 +56,7 @@ NARRATION = {
                       "spring-loaded diagnostic button, confirmed by its sensor.",
     "cable_inspect": "Harness inspection: the hand elastically flexes the wiring "
                      "cable while the 6-axis wrist force/torque sensor monitors load.",
-    "peg_insert": "Connector seating: the high-voltage connector is grasped, carried, "
-                  "and seated into its receptacle -- all through real contact.",
+    "tool_use": "Tool use: the hand grasps a slender probe, carries it to a recessed diagnostic well, and actuates the micro-switch with the tool tip.",
 }
 
 
@@ -100,10 +99,10 @@ def run(args: argparse.Namespace) -> dict:
         title="DexAssembly Cell",
         subtitle="A real-physics dexterous assembly & QA cell -- 16-DOF LEAP hand",
         bullets=[
-            "6-task autonomous arena: sort - inspect - test - harness - connector seat",
+            "6-task autonomous arena: sort - inspect - test - harness - tool use",
             "Honest physics: driven only by actuators, never qpos teleportation",
             "Closed-loop tactile grasping + live-position perception + failure recovery",
-            "23 sensors - 6-axis wrist F/T - 4 fingertip touch - deformable cable - 4 cameras",
+            "24 sensors - 6-axis wrist F/T - 4 fingertip touch - deformable cable - 4 cameras",
         ],
         footer="Robothon 2026 - Faraday Future MuJoCo Hackathon",
     )
@@ -123,7 +122,7 @@ def run(args: argparse.Namespace) -> dict:
         if counter["n"] % step_every:
             return
         cam = CAM_BY_KIND.get(info.kind, "cam_hero")
-        if info.phase in GRASP_PHASES and info.kind in ("sort", "peg"):
+        if info.phase in GRASP_PHASES and info.kind in ("sort", "tool_use"):
             cam = "cam_side"
         caption = NARRATION.get(info.task, "")
         # accumulate subtitle beats keyed on video time
@@ -171,7 +170,7 @@ def run(args: argparse.Namespace) -> dict:
         "inspect_sort": lambda d: f"inspected, err {d.get('placement_err_m', 0) * 1000:.0f} mm",
         "button": lambda d: f"press {d.get('press_depth_mm', 0):.0f} mm",
         "cable": lambda d: f"deflection {d.get('max_deflection_mm', 0):.0f} mm",
-        "peg": lambda d: f"align {d.get('align_err_m', 0) * 1000:.0f} mm, seated",
+        "tool_use": lambda d: f"probe press {d.get('probe_press_mm', 0):.1f} mm",
     }
     lines = [
         (t["name"], _detail.get(t["kind"], lambda d: "")(t["detail"]), bool(t["success"]))

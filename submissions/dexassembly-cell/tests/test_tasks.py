@@ -28,7 +28,7 @@ def test_default_arena_has_six_tasks():
     kinds = [t.kind for t in arena]
     assert kinds.count("sort") == 2
     assert "inspect_sort" in kinds and "button" in kinds
-    assert "cable" in kinds and "peg" in kinds
+    assert "cable" in kinds and "tool_use" in kinds
 
 
 def test_every_task_has_steps_and_score():

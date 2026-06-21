@@ -9,7 +9,7 @@ procedurally-built MuJoCo model.
 flowchart TD
     subgraph build[Scene construction]
         SC[scene.py · MjSpec builder] -->|attach LEAP hand| MODEL[(MjModel + MjData)]
-        SC -->|gantry, bench, bins, parts,<br/>peg+socket, button, cable| MODEL
+        SC -->|gantry, bench, bins, parts,<br/>probe tool + diagnostic well, button, cable| MODEL
         SC -->|touch ×4, wrist F/T,<br/>button, 4 cameras| MODEL
     end
 
@@ -35,7 +35,7 @@ flowchart TD
 
 | Module | Responsibility |
 |---|---|
-| `dexassembly/scene.py` | Build the whole cell with `mujoco.MjSpec`; attach the LEAP hand to the gantry wrist; add bench, bins, parts, peg/socket, spring button, deformable cable, sensors, and cameras. Emits `scene.xml`. |
+| `dexassembly/scene.py` | Build the whole cell with `mujoco.MjSpec`; attach the LEAP hand to the gantry wrist; add bench, bins, parts, probe-tool station, spring button, deformable cable, sensors, and cameras. Emits `scene.xml`. |
 | `dexassembly/controllers.py` | `CellController`: affine Cartesian map from gantry controls to the grasp-centre; symbolic hand-pose presets over the 16 LEAP actuators; tactile and wrist-F/T readouts. |
 | `dexassembly/tasks.py` | `Step` motion primitives, per-task `score()`/`monitor()`, the six task builders, and `default_arena()`. |
 | `dexassembly/engine.py` | Executes tasks step-by-step, drives `data.ctrl`, advances on conditions/timeouts, runs **checkpoint/verify recovery**, streams a per-step callback, and produces the scorecard. |
