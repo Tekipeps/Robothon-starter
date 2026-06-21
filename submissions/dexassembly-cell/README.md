@@ -256,18 +256,57 @@ dexassembly-cell/
 └── assets/leap_hand/        # vendored LEAP Hand MJCF (MIT) — see LICENSE-THIRDPARTY.md
 ```
 
-## Scoring rubric mapping
+## Scoring Rubric Alignment
 
-| Rubric criterion | Where it shows up |
-|---|---|
-| Runnability | One command; all assets committed; static `scene.xml`; `validate.py`; ~45 tests; deterministic. |
-| MuJoCo depth | `MjSpec` build + hand attach; **deformable cable**; **6-axis wrist F/T** + 4 touch + button sensors (23 total); spring joint; elliptic friction; 20 actuators; 4 cameras; **fully actuated, no `qpos` teleport**. |
-| Task design | Graded **6-task** assembly/inspection arena with real-world relevance and quantitative scoring. |
-| Control | Closed-loop FSM (tactile + live-pose feedback), **failure recovery**, force-aware inspection, autonomy, teleoperation, data collection; **ablation** quantifies the gain. |
-| Dexterity | 16-DOF multi-finger power grasp that physically lifts parts (~25 N tactile), opposable-thumb caging, single-finger button press, multi-finger deformable-cable manipulation. |
-| Engineering quality | Typed, documented package; config dataclasses; CLI; `validate.py`; ARCHITECTURE + EVALUATION guides; ~45 tests; attribution. |
-| Presentation | Narrated multi-camera demo (captions + `narration.srt`) with live tactile/force overlays and progress. |
-| Innovation | An **honestly-actuated** (no-`qpos`-teleport) dexterous cell themed as a real EV assembly/QA station, that is simultaneously a scored benchmark + ablation, a narrated demo with a live eye-in-hand view, and a labelled RGB-D dataset generator. |
+This maps the submission to the eight judging criteria and tells you **exactly where
+to verify each claim** — nothing here is asserted without code/artifact you can check.
+
+**1. Runnability.** One command (`python run_demo.py`) reproduces every artifact;
+**all assets are committed** (LEAP hand vendored under `assets/leap_hand/`), the scene
+is generated procedurally (no runtime downloads), and the run is deterministic.
+*Verify:* [`run_demo.py`](run_demo.py), [`validate.py`](validate.py) (28 checks),
+`python -m pytest tests` (41 tests), [`requirements.txt`](requirements.txt).
+
+**2. Depth of MuJoCo use.** `MjSpec` programmatic build with the hand **attached**
+via `frame.attach_body`; a **deformable articulated cable** (6 hinge joints); a
+**6-axis wrist force/torque** sensor + **4 fingertip touch** sensors + a button
+displacement sensor (**23 sensors**); a spring-loaded **slide joint**; **elliptic
+friction cones** (`impratio`); **20 position-servo actuators**; **4 cameras**;
+`nq=55`. Control is **only** via `data.ctrl` — **never `qpos` teleportation**.
+*Verify:* [`dexassembly/scene.py`](dexassembly/scene.py), [`scene.xml`](scene.xml).
+
+**3. Task design.** A graded **six-task** EV assembly/QA arena (3× colour-sort, an
+eye-in-hand inspect-and-sort, a tactile button test, a deformable-cable force
+inspection), each scored on **physical state** (placement error, press depth, cable
+deflection). *Verify:* [`dexassembly/tasks.py`](dexassembly/tasks.py),
+[`report.json`](report.json).
+
+**4. Control.** Closed-loop FSM with **live-position perception**,
+**tactile-triggered** grasping, **force-aware** inspection, and **grasp-failure
+detection + recovery**; plus **keyboard teleoperation** and a **data-collection**
+pipeline — all four modalities the rubric lists. An **ablation** quantifies the
+closed-loop gain (+30 pp). *Verify:* [`dexassembly/engine.py`](dexassembly/engine.py),
+[`dexassembly/teleop.py`](dexassembly/teleop.py), `evaluation.json`.
+
+**5. Dexterous manipulation.** A 16-DOF, four-finger **power grasp** that physically
+closes and **lifts** parts with **measured tactile force (~25 N)**; opposable-thumb
+caging; single-finger button press; multi-finger deformable-cable manipulation.
+*Verify:* [`dexassembly/controllers.py`](dexassembly/controllers.py), the demo video.
+
+**6. Engineering quality.** Typed, documented Python package; config dataclasses;
+CLI; `validate.py`; ARCHITECTURE + EVALUATION guides; 41 tests; third-party
+attribution. *Verify:* [`ARCHITECTURE.md`](ARCHITECTURE.md),
+[`LICENSE-THIRDPARTY.md`](LICENSE-THIRDPARTY.md), `tests/`.
+
+**7. Presentation.** A narrated, multi-camera demo with a title card, a closing
+scorecard, a persistent **"real physics — no qpos teleport"** badge, live
+tactile/force overlays, and a live **eye-in-hand** picture-in-picture; an `.srt`
+subtitle track is exported. *Verify:* [`demo.mp4`](demo.mp4), `narration.srt`.
+
+**8. Innovation.** An **honestly-actuated** (no-`qpos`-teleport) dexterous cell,
+themed as a real EV assembly/QA station, that is at once a scored benchmark + a
+domain-randomized ablation, a narrated demo, and a labelled RGB-D dataset generator
+— built transparently with a documented human-AI workflow ([`COLLABORATION.md`](COLLABORATION.md)).
 
 ---
 
