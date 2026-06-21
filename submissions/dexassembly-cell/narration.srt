@@ -11,5 +11,5 @@ Functional test: a single extended finger presses the spring-loaded diagnostic b
 Harness inspection: the hand elastically flexes the wiring cable while the 6-axis wrist force/torque sensor monitors load.
 
 4
-00:00:34,900 --> 00:00:48,766
+00:00:34,900 --> 00:00:51,099
 Tool use: the hand grasps a slender probe, carries it to a recessed diagnostic well, and actuates the micro-switch with the tool tip.

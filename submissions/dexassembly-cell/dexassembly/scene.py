@@ -364,6 +364,23 @@ def _add_tool_station(world: mujoco.MjsBody, spec: mujoco.MjSpec) -> None:
         world.add_geom(type=mujoco.mjtGeom.mjGEOM_BOX, size=[sx, sy, hh],
                        pos=[tx + dx, ty + dy, hh], material="metal")
 
+    # --- tool dock: a low open-top tray surrounding the holster.  The slender probe
+    # is held at a ~33 deg tilt, so it cannot be re-inserted upright into the narrow
+    # chimney; instead it is laid back down to rest *inside its dock* after use.  The
+    # low walls corral it so it comes to rest tidily at the tool station rather than
+    # sliding out across the bench. ---
+    # +Y edge kept south of y=-0.20 so the dock wall stays clear of the part_blue
+    # pick zone (part_blue rests at y=-0.10); the gentle lay-down release lands the
+    # probe near y=-0.27, so no +Y wall reach is needed there.
+    dcx, dcy = 0.195, -0.26                          # dock centre (encloses chimney + landing zone)
+    dhx, dhy, dwt, dwh = 0.105, 0.060, 0.008, 0.022  # inner half-x, half-y, wall half-thick, wall half-height
+    world.add_geom(name="tool_dock_floor", type=mujoco.mjtGeom.mjGEOM_BOX,
+                   size=[dhx, dhy, 0.002], pos=[dcx, dcy, 0.002], material="metal")
+    for dx, dy, sx, sy in ((dhx + dwt, 0, dwt, dhy + dwt), (-(dhx + dwt), 0, dwt, dhy + dwt),
+                           (0, dhy + dwt, dhx + dwt, dwt), (0, -(dhy + dwt), dhx + dwt, dwt)):
+        world.add_geom(type=mujoco.mjtGeom.mjGEOM_BOX, size=[sx, sy, dwh],
+                       pos=[dcx + dx, dcy + dy, dwh], material="metal")
+
     # --- diagnostic well + recessed spring switch ---
     well = world.add_body(name="diag_well", pos=[wx, wy, 0.0])
     well.add_geom(name="diag_base", type=mujoco.mjtGeom.mjGEOM_BOX, size=[0.04, 0.04, 0.005],

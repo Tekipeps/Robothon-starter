@@ -3,8 +3,8 @@
   "n_success": 6,
   "success_rate": 1.0,
   "score_0_100": 100.0,
-  "sim_time_s": 49.75,
-  "wall_time_s": 646.08,
+  "sim_time_s": 52.15,
+  "wall_time_s": 662.8,
   "tasks": [
     {
       "name": "part_red",
@@ -22,9 +22,9 @@
       "kind": "sort",
       "success": "True",
       "detail": {
-        "placement_err_m": 0.0129,
+        "placement_err_m": 0.0476,
         "final_z": 0.0359,
-        "hold_grip_N": 27.76,
+        "hold_grip_N": 23.22,
         "recoveries": 0
       }
     },
@@ -34,7 +34,7 @@
       "success": "True",
       "detail": {
         "inspected": true,
-        "placement_err_m": 0.0693,
+        "placement_err_m": 0.0477,
         "recoveries": 0
       }
     },
@@ -43,7 +43,7 @@
       "kind": "button",
       "success": true,
       "detail": {
-        "press_depth_mm": 18.71
+        "press_depth_mm": 18.73
       }
     },
     {
@@ -51,7 +51,7 @@
       "kind": "cable",
       "success": true,
       "detail": {
-        "max_deflection_mm": 89.4,
+        "max_deflection_mm": 86.7,
         "peak_wrist_load_N": 361.5
       }
     },
@@ -62,17 +62,17 @@
       "detail": {
         "tool_lifted": true,
         "probe_press_mm": 10.31,
-        "hold_grip_N": 27.44
+        "hold_grip_N": 28.07
       }
     }
   ],
   "narration_srt": "C:\\Users\\Tekena\\Documents\\learning\\Robothon-starter\\submissions\\dexassembly-cell\\outputs\\narration.srt",
   "video": "C:\\Users\\Tekena\\Documents\\learning\\Robothon-starter\\submissions\\dexassembly-cell\\outputs\\dexassembly_demo.mp4",
   "dataset": {
-    "n_samples": 2388,
+    "n_samples": 2508,
     "sample_hz": 50.0,
     "image_hz": 3.0,
-    "n_images": 145,
+    "n_images": 152,
     "nq": 56,
     "nv": 52,
     "nu": 20,

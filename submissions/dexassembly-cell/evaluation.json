@@ -9,23 +9,23 @@
   "seed0": 2000,
   "modes": {
     "adaptive": {
-      "mean_success_rate": 0.8,
-      "std_success_rate": 0.2211,
+      "mean_success_rate": 0.9333,
+      "std_success_rate": 0.1333,
       "per_part_success_rate": {
-        "part_red": 0.9,
-        "part_green": 1.0,
-        "part_blue": 0.5
+        "part_red": 1.0,
+        "part_green": 0.9,
+        "part_blue": 0.9
       }
     },
     "baseline_open_loop": {
-      "mean_success_rate": 0.5,
-      "std_success_rate": 0.2687,
+      "mean_success_rate": 0.6667,
+      "std_success_rate": 0.2582,
       "per_part_success_rate": {
-        "part_red": 0.3,
-        "part_green": 0.7,
-        "part_blue": 0.5
+        "part_red": 0.5,
+        "part_green": 0.6,
+        "part_blue": 0.9
       }
     }
   },
-  "ablation_gain_closed_loop": 0.3
+  "ablation_gain_closed_loop": 0.2666
 }

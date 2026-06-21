@@ -257,6 +257,13 @@ def tool_use_task(cfg: SceneConfig) -> Task:
     WX_ADJ = wx + 0.044
     WY_ADJ = wy - 0.016
 
+    # Return: the probe is held at a ~33 deg tilt and cannot be re-inserted upright
+    # into the narrow chimney, so we lay it back down to rest inside the surrounding
+    # tool dock (low-walled tray around the station).  We lower it close to the bench
+    # over the dock, loosen to a cupped pre-grasp, then fully open so it settles
+    # gently rather than being flung; the dock walls keep it at the station.
+    DOCK_X, DOCK_Y = 0.20, -0.26   # release point over the dock, next to the holster
+
     steps = [
         # --- phase 1: pick the probe from its holster ---
         # The probe handle centre rests at TOOL_HANDLE_Z (not table level), so we
@@ -274,12 +281,13 @@ def tool_use_task(cfg: SceneConfig) -> Task:
         Step("insert_probe", GantryTarget(WX_ADJ, WY_ADJ, PROBE_PRESS_Z), None,
              probe_switch_pressed(0.006), 2.5, settle=0.4),
 
-        # --- phase 4: retract and return probe to holster ---
+        # --- phase 4: retract and lay the probe back down in its dock ---
         Step("retract_probe", GantryTarget(WX_ADJ, WY_ADJ, LIFT_Z), None, None, 1.0),
-        Step("return_tool", GantryTarget(tx, ty, LIFT_Z), None, None, 1.5),
-        Step("lower_to_holster", GantryTarget(tx, ty, TOOL_HANDLE_Z + 0.01), None, None, 1.0),
-        Step("release_tool", None, "open", None, 0.7, settle=0.3),
-        Step("retreat_tool", GantryTarget(tx, ty, HOVER_Z), None, None, 0.8),
+        Step("return_tool", GantryTarget(DOCK_X, DOCK_Y, LIFT_Z), None, None, 1.8),
+        Step("lower_to_dock", GantryTarget(DOCK_X, DOCK_Y, TOOL_HANDLE_Z + 0.005), None, None, 1.6, settle=0.3),
+        Step("loosen_grip", None, "pregrasp", None, 0.6, settle=0.3),
+        Step("release_tool", None, "open", None, 0.8, settle=0.5),
+        Step("retreat_tool", GantryTarget(DOCK_X, DOCK_Y, HOVER_Z), None, None, 0.8),
     ]
     return Task("tool_use", "tool_use", steps, score, monitor)
 

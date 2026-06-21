@@ -47,8 +47,8 @@ actuators (`data.ctrl`); the code never teleports joints via `qpos`.
 `report.json` is produced by `dexassembly/engine.py`. Each task has a `score()`
 function (`dexassembly/tasks.py`) that checks **physical state**, e.g.:
 
-- *sort*: part centre within 75 mm of the bin centre **and** resting low (`final_z < 0.10`).
-- *tool_use*: probe tool lifted from its holster **and** recessed switch travel above 3 mm.
+- *sort*: part centre within 80 mm of the bin centre **and** resting low (`final_z < 0.10`).
+- *tool_use*: probe tool lifted from its holster **and** recessed switch travel above 6 mm.
 - *button*: peak displacement `> 8 mm` (from the button joint sensor).
 - *cable_inspect*: peak elastic deflection `> 40 mm` (from the cable tip body).
 - *inspect_sort*: the part is raised to the eye-in-hand camera, held steady, and placed in the bin (scored on placement).
@@ -68,9 +68,9 @@ Representative result (30 grasps/mode):
 
 | Mode | Success rate |
 |---|---|
-| **adaptive (closed-loop)** | **80.0% ± 22.1** |
-| baseline (open-loop) | 50.0% ± 26.9 |
-| **closed-loop gain** | **+30.0 pp** |
+| **adaptive (closed-loop)** | **93.3% ± 13.3** |
+| baseline (open-loop) | 66.7% ± 25.8 |
+| **closed-loop gain** | **+26.7 pp** |
 
 The large gap is the headline of the ablation: perception feedback + grasp
 recovery turn a brittle open-loop script into a robust controller. (Exact numbers

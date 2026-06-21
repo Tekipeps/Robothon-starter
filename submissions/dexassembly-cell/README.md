@@ -19,7 +19,7 @@ recovery.
   the demo video says so on-screen throughout.
 - **It's closed-loop, and we prove it.** A domain-randomized **ablation** shows the
   adaptive controller (live-position perception + grasp recovery) beating an
-  open-loop baseline **80% vs 50% — +30 pp**. That gap *is* the contribution.
+  open-loop baseline **93% vs 67% — +27 pp**. That gap *is* the contribution.
 - **Depth + breadth in one package.** 20 actuators, **24 sensors** (6-axis wrist
   F/T, 4 fingertip touch, joint + button), a **deformable articulated cable**, 4
   cameras, `nq=56` — and all four control modalities the rubric lists (scripted
@@ -39,14 +39,14 @@ recovery.
 ```
 Deterministic arena:  100.0/100   (6/6 tasks)
   [PASS] part_red                placement_err 15 mm, hold_grip 29 N
-  [PASS] part_green              placement_err 13 mm, hold_grip 28 N
-  [PASS] inspect_sort_part_blue  raised to eye-in-hand cam, placement_err 69 mm
+  [PASS] part_green              placement_err 48 mm, hold_grip 23 N
+  [PASS] inspect_sort_part_blue  raised to eye-in-hand cam, placement_err 48 mm
   [PASS] inspect_button          press_depth 19 mm
-  [PASS] cable_inspect           cable deflection 89 mm, peak_wrist 362 N
-  [PASS] tool_use                probe press 10.3 mm, tool lifted, hold_grip 27 N
+  [PASS] cable_inspect           cable deflection 87 mm, peak_wrist 362 N
+  [PASS] tool_use                probe press 10.3 mm, tool lifted+re-docked, hold_grip 28 N
 
 Domain-randomized grasp study (±12 mm / ±15%, 30 grasps/mode):
-  adaptive (closed-loop)   80.0%      open-loop baseline   50.0%      gain +30.0 pp
+  adaptive (closed-loop)   93.3%      open-loop baseline   66.7%      gain +26.7 pp
 ```
 
 ---
@@ -60,7 +60,7 @@ Domain-randomized grasp study (±12 mm / ±15%, 30 grasps/mode):
 | **Sensing** | 4 fingertip **touch sensors**, a **6-axis wrist force/torque sensor**, 16 hand joint encoders, a button-displacement sensor, and **4 cameras** (hero / top / side / eye-in-hand wrist). |
 | **Scene** | Instrumented bench with 3 colour bins, 3 sortable parts, a spring-loaded inspection button, a recessed probe-actuated diagnostic switch, a graspable probe tool, and a **deformable articulated cable** — all built in MJCF from primitives. |
 
-Model size: `nq=56, nv=51, nu=20` actuators, `nsensor=23`, `ncam=4`, `ngeom=130`.
+Model size: `nq=56, nv=52, nu=20` actuators, `nsensor=24`, `ncam=4`, `ngeom=142`.
 
 ---
 
@@ -122,7 +122,7 @@ monitors the load — genuine deformable-body dynamics plus force sensing.
 The dexterous pick-and-place is run over many **domain-randomized** rollouts (part
 positions ±12 mm, masses ±15%). An **ablation** compares the full closed-loop
 system (live-position perception + grasp recovery) against an open-loop baseline
-(fixed nominal targeting, no recovery): **80% vs 50% success — a +30 pp
+(fixed nominal targeting, no recovery): **93% vs 67% success — a +27 pp
 gain**. Tuning this study is also how a real grasp-robustness bug was found and
 fixed (over-stiff contacts were catapulting slightly off-centre parts; compliant
 contacts resolved it) — the kind of issue only a randomized study surfaces.
@@ -251,7 +251,7 @@ dexassembly-cell/
 │   ├── record.py            # RGB-D + state/action dataset recorder
 │   ├── hud.py               # demo-video HUD overlay + captions
 │   └── teleop.py            # keyboard teleoperation
-├── tests/                   # ~45 tests across scene/controllers/tasks/pipeline
+├── tests/                   # 41 tests across scene/controllers/tasks/pipeline
 └── assets/leap_hand/        # vendored LEAP Hand MJCF (MIT) — see LICENSE-THIRDPARTY.md
 ```
 
@@ -263,7 +263,7 @@ to verify each claim** — nothing here is asserted without code/artifact you ca
 **1. Runnability.** One command (`python run_demo.py`) reproduces every artifact;
 **all assets are committed** (LEAP hand vendored under `assets/leap_hand/`), the scene
 is generated procedurally (no runtime downloads), and the run is deterministic.
-*Verify:* [`run_demo.py`](run_demo.py), [`validate.py`](validate.py) (28 checks),
+*Verify:* [`run_demo.py`](run_demo.py), [`validate.py`](validate.py) (36 checks),
 `python -m pytest tests` (41 tests), [`requirements.txt`](requirements.txt).
 
 **2. Depth of MuJoCo use.** `MjSpec` programmatic build with the hand **attached**
@@ -284,7 +284,7 @@ deflection). *Verify:* [`dexassembly/tasks.py`](dexassembly/tasks.py),
 **tactile-triggered** grasping, **force-aware** inspection, and **grasp-failure
 detection + recovery**; plus **keyboard teleoperation** and a **data-collection**
 pipeline — all four modalities the rubric lists. An **ablation** quantifies the
-closed-loop gain (+30 pp). *Verify:* [`dexassembly/engine.py`](dexassembly/engine.py),
+closed-loop gain (+27 pp). *Verify:* [`dexassembly/engine.py`](dexassembly/engine.py),
 [`dexassembly/teleop.py`](dexassembly/teleop.py), `evaluation.json`.
 
 **5. Dexterous manipulation.** A 16-DOF, four-finger **power grasp** that physically

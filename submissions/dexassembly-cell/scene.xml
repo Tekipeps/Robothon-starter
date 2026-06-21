@@ -105,6 +105,11 @@
     <geom size="0.008 0.02 0.043" pos="0.22 -0.26 0.043" type="box" material="metal"/>
     <geom size="0.02 0.008 0.043" pos="0.24 -0.24 0.043" type="box" material="metal"/>
     <geom size="0.02 0.008 0.043" pos="0.24 -0.28 0.043" type="box" material="metal"/>
+    <geom name="tool_dock_floor" size="0.105 0.06 0.002" pos="0.195 -0.26 0.002" type="box" material="metal"/>
+    <geom size="0.008 0.068 0.022" pos="0.308 -0.26 0.022" type="box" material="metal"/>
+    <geom size="0.008 0.068 0.022" pos="0.082 -0.26 0.022" type="box" material="metal"/>
+    <geom size="0.113 0.008 0.022" pos="0.195 -0.192 0.022" type="box" material="metal"/>
+    <geom size="0.113 0.008 0.022" pos="0.195 -0.328 0.022" type="box" material="metal"/>
     <camera name="cam_hero" pos="0.62 -0.62 0.42" quat="0.771688 0.507988 0.210415 0.319644"/>
     <camera name="cam_top" pos="0 0 0.85"/>
     <camera name="cam_side" pos="0.75 0 0.18" quat="0.547713 0.447225 0.447225 0.547713"/>

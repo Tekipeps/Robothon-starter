@@ -176,13 +176,24 @@ def run(args: argparse.Namespace) -> dict:
         (t["name"], _detail.get(t["kind"], lambda d: "")(t["detail"]), bool(t["success"]))
         for t in report["tasks"]
     ]
+    # Pull the ablation gain straight from evaluation.json so the outro can never
+    # drift from the committed numbers (it reports "" if the study hasn't been run).
+    gain_txt = ""
+    for cand in (ROOT / "evaluation.json", OUT / "evaluation.json"):
+        if cand.exists():
+            try:
+                g = json.loads(cand.read_text(encoding="utf-8"))["ablation_gain_closed_loop"]
+                gain_txt = f"   closed-loop +{g * 100:.0f} pp vs open-loop"
+            except (KeyError, ValueError):
+                gain_txt = ""
+            break
     card = scorecard(
         args.width, args.height,
         title="Scored arena result",
         lines=lines,
         headline=f"{report['score_0_100']:.0f}/100   "
-                 f"({report['n_success']}/{report['n_tasks']} tasks)   "
-                 f"closed-loop +30 pp vs open-loop",
+                 f"({report['n_success']}/{report['n_tasks']} tasks)"
+                 f"{gain_txt}",
         footer="Reproduce: python run_demo.py  -  every motion is real actuated contact",
     )
     for _ in range(int(args.fps * 3.5)):
