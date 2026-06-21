@@ -1,0 +1,6 @@
+outputs/
+__pycache__/
+*.pyc
+.venv/
+# scratch / tuning scripts (single leading underscore); keeps __init__.py tracked
+_[!_]*.py

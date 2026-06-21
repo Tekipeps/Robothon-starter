@@ -1,0 +1,87 @@
+{
+  "n_tasks": 6,
+  "n_success": 6,
+  "success_rate": 1.0,
+  "score_0_100": 100.0,
+  "sim_time_s": 43.1,
+  "wall_time_s": 607.33,
+  "tasks": [
+    {
+      "name": "part_red",
+      "kind": "sort",
+      "success": "True",
+      "detail": {
+        "placement_err_m": 0.0126,
+        "final_z": 0.0359,
+        "hold_grip_N": 22.92,
+        "recoveries": 0
+      }
+    },
+    {
+      "name": "part_green",
+      "kind": "sort",
+      "success": "True",
+      "detail": {
+        "placement_err_m": 0.0129,
+        "final_z": 0.0359,
+        "hold_grip_N": 27.76,
+        "recoveries": 0
+      }
+    },
+    {
+      "name": "inspect_sort_part_blue",
+      "kind": "inspect_sort",
+      "success": "True",
+      "detail": {
+        "inspected": true,
+        "placement_err_m": 0.0627,
+        "recoveries": 0
+      }
+    },
+    {
+      "name": "inspect_button",
+      "kind": "button",
+      "success": true,
+      "detail": {
+        "press_depth_mm": 18.92
+      }
+    },
+    {
+      "name": "cable_inspect",
+      "kind": "cable",
+      "success": true,
+      "detail": {
+        "max_deflection_mm": 89.4,
+        "peak_wrist_load_N": 361.5
+      }
+    },
+    {
+      "name": "peg_insert",
+      "kind": "peg",
+      "success": "True",
+      "detail": {
+        "align_err_m": 0.0394,
+        "peg_z": 0.0479,
+        "hold_grip_N": 29.51
+      }
+    }
+  ],
+  "narration_srt": "C:\\Users\\Tekena\\Documents\\learning\\Robothon-starter\\submissions\\dexassembly-cell\\outputs\\narration.srt",
+  "video": "C:\\Users\\Tekena\\Documents\\learning\\Robothon-starter\\submissions\\dexassembly-cell\\outputs\\dexassembly_demo.mp4",
+  "dataset": {
+    "n_samples": 2055,
+    "sample_hz": 50.0,
+    "image_hz": 3.0,
+    "n_images": 125,
+    "nq": 55,
+    "nv": 51,
+    "nu": 20,
+    "fields": {
+      "qpos": "generalized positions (gantry, hand, free objects)",
+      "qvel": "generalized velocities",
+      "ctrl": "commanded actuator targets (4 gantry + 16 hand)",
+      "grip_forces": "fingertip touch-sensor forces [index, middle, ring, thumb] (N)",
+      "ncon": "active contact count"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "study": "dexterous pick-and-place under domain randomization",
+  "randomization": {
+    "position_mm": 12,
+    "mass_pct": 15
+  },
+  "n_rollouts": 10,
+  "n_grasps_per_mode": 30,
+  "seed0": 2000,
+  "modes": {
+    "adaptive": {
+      "mean_success_rate": 0.8,
+      "std_success_rate": 0.2211,
+      "per_part_success_rate": {
+        "part_red": 0.9,
+        "part_green": 1.0,
+        "part_blue": 0.5
+      }
+    },
+    "baseline_open_loop": {
+      "mean_success_rate": 0.5,
+      "std_success_rate": 0.2687,
+      "per_part_success_rate": {
+        "part_red": 0.3,
+        "part_green": 0.7,
+        "part_blue": 0.5
+      }
+    }
+  },
+  "ablation_gain_closed_loop": 0.3
+}
