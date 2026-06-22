@@ -79,6 +79,16 @@ Each task is scored against measurable physical criteria (placement error, press
 depth, cable deflection, probe-switch travel), and the run reports an overall
 success rate on a 0–100 scale.
 
+| # | Task | Core challenge | Key capability exercised | Pass criterion |
+|---|------|----------------|--------------------------|----------------|
+| 1–2 | Sort red / green | Grasp a 48 mm cube, carry, release into a target bin | Power grasp + closed-loop position targeting + grasp recovery | placement_err < 80 mm |
+| 3 | Inspect-sort blue | Lift to 270 mm eye-in-hand camera, hold steady, then bin | High-lift carry + held-offset compensation + eye-in-hand framing | raised to cam height + placement_err < 120 mm |
+| 4 | Button functional test | Drive a single fingertip to a spring-loaded cap and confirm travel via displacement sensor | Single-finger pose + contact-triggered closed-loop | press_depth > 8 mm |
+| 5 | Cable force inspect | Sweep a deformable cable while the wrist F/T sensor monitors the load | Deformable-body contact + force-aware manipulation | deflection > 40 mm |
+| 6 | Tool use | Pick a slender probe, lower its tip into a 28 mm guarded well, actuate a recessed micro-switch | Tool-mediated manipulation: precision lives in geometry, not finger dexterity | probe_switch travel > 6 mm |
+
+The tasks are ordered by complexity: tasks 1–2 isolate the basic grasp primitive; task 3 adds an inspection hold and a high-lift carry; task 4 switches to a single-finger pointing pose and a contact-triggered condition; task 5 introduces deformable-body dynamics and force sensing; task 6 chains two full pick-and-place sequences with a precision tool, requiring the robot to reason about a held object's reach envelope.
+
 ---
 
 ## Technical approach
@@ -94,11 +104,11 @@ sensor sites** are all added programmatically. The builder also emits a static
 [`scene.xml`](scene.xml) for inspection in `python -m mujoco.viewer`.
 
 ### Cartesian control + grasp primitives (`dexassembly/controllers.py`)
-Because the gantry is a pure translation + yaw, the world position of the grasp
-centre is an **affine function of the four gantry controls**, which the controller
-calibrates once (from the *closed*-grasp fingertip convergence point) and inverts
-analytically — so `set_gantry_target(x, y, z, yaw)` places the grasp point in the
-world directly. Five symbolic **hand poses** (`open`, `pregrasp`, `grasp`,
+At pitch=0 the gantry is a pure translation + yaw, so the world position of the
+grasp centre is an **affine function of the three translational controls**; the
+controller calibrates the constant offset once (from the *closed*-grasp fingertip
+convergence point) and inverts analytically — so `set_gantry_target(x, y, z, pitch, yaw)`
+places the grasp point in the world directly, with `pitch` enabling angled approach. Five symbolic **hand poses** (`open`, `pregrasp`, `grasp`,
 `pinch`, `point`) map onto the 16 LEAP actuators; the power grasp was tuned by an
 automated sweep to lift a 48 mm part with a clean, stable grip.
 
@@ -164,7 +174,7 @@ camera — for perception/data use.)
 
 ## Current limitations
 
-- The hand mounts on a Cartesian gantry rather than a 6-DOF arm, so grasp approach is top-down only (chosen deliberately for reliability and singularity-free reach).
+- The hand mounts on a Cartesian gantry rather than a 6-DOF arm; the 5-DOF wrist (pitch + yaw) enables angled approach but not full-hemisphere reach (chosen deliberately for singularity-free, repeatable workspace over the bench).
 - Inspection is a raise-and-hold to a wrist camera; true in-hand reorientation (finger-gaiting) is future work — a power grasp on a free cube was not stable enough under a large wrist rotation to ship honestly.
 - Grasp poses are tuned for ~48 mm parts; very thin or very large objects need re-tuning.
 - The autonomous policy is a tuned finite-state machine, not a learned policy — the recorded dataset is the intended bridge to learning one.
@@ -274,11 +284,14 @@ friction cones** (`impratio`); **21 position-servo actuators** (5-DOF gantry + 1
 LEAP); **4 cameras**; `nq=57`. Control is **only** via `data.ctrl` — **never `qpos`
 teleportation**. *Verify:* [`dexassembly/scene.py`](dexassembly/scene.py), [`scene.xml`](scene.xml).
 
-**3. Task design.** A graded **six-task** EV assembly/QA arena (2× colour-sort, an
-eye-in-hand inspect-and-sort, a tactile button test, a deformable-cable force
-inspection, and a probe tool-use task), each scored on **physical state** (placement
-error, press depth, cable deflection, probe-switch travel). *Verify:*
-[`dexassembly/tasks.py`](dexassembly/tasks.py),
+**3. Task design.** A graded **six-task** EV assembly/QA arena with a deliberate
+difficulty ladder: 2× colour-sort (baseline grasp), an eye-in-hand inspect-and-sort
+(high-lift hold + camera framing), a tactile button test (single-finger + contact
+trigger), a deformable-cable force inspection (soft-body dynamics + F/T sensing), and
+a probe tool-use task (tool-mediated reach into a guarded well). Each task is scored
+on **physical state** (placement error, press depth, cable deflection, probe-switch
+travel) and the sequencing is intentional — each task exercises a capability the
+previous ones do not. *Verify:* [`dexassembly/tasks.py`](dexassembly/tasks.py),
 [`report.json`](report.json).
 
 **4. Control.** Closed-loop FSM with **live-position perception**,
@@ -303,12 +316,20 @@ scorecard, a persistent **"real physics — no qpos teleport"** badge, live
 tactile/force overlays, and a live **eye-in-hand** picture-in-picture; an `.srt`
 subtitle track is exported. *Verify:* [`demo.mp4`](demo.mp4), `narration.srt`.
 
-**8. Innovation.** An **honestly-actuated** (no-`qpos`-teleport) dexterous cell,
-themed as a real EV assembly/QA station, that is at once a scored benchmark + a
-domain-randomized ablation, a narrated demo, and a labelled RGB-D dataset generator
-— built against a **real control interface** with an honest sim-to-real channel
-mapping ([`HARDWARE.md`](HARDWARE.md)) and a documented human-AI workflow
-([`COLLABORATION.md`](COLLABORATION.md)).
+**8. Innovation.** Three intersecting claims, each verifiable:
+(a) **Honest actuation as a design constraint, not a post-hoc claim** — the entire
+architecture (affine Cartesian calibration, tactile-triggered conditions, held-offset
+correction) was designed around the fact that `qpos` teleportation is forbidden;
+the ablation measures the concrete value this adds (+27 pp over open-loop).
+(b) **Tool-mediated fine manipulation on a power-grasp rig** — rather than
+over-engineering finger dexterity, the probe task solves a precision reach problem
+through *tool geometry*, the same strategy humans use and a pattern directly
+applicable to real assembly lines.
+(c) **A deployment path, not just a demo** — the 5-DOF gantry (pitch + yaw wrist)
+is mapped to real off-the-shelf hardware in [`HARDWARE.md`](HARDWARE.md); the
+labelled RGB-D + state/action dataset is a ready-made imitation-learning corpus; and
+the human-AI workflow in [`COLLABORATION.md`](COLLABORATION.md) documents an
+engineering methodology, not just a credit disclaimer.
 
 ---
 
