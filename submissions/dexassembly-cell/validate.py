@@ -30,6 +30,7 @@ def _exists(rel: str) -> None:
 
 def main() -> int:
     for rel in ("README.md", "EVALUATION_GUIDE.md", "ARCHITECTURE.md",
+                "HARDWARE.md", "COLLABORATION.md",
                 "LICENSE-THIRDPARTY.md", "requirements.txt", "run_demo.py",
                 "scene.xml", "registration.json", "demo.mp4",
                 "report.json", "evaluation.json",

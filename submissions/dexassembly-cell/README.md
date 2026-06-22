@@ -240,7 +240,7 @@ dexassembly-cell/
 ├── scene.xml                # generated static scene (for the MuJoCo viewer)
 ├── registration.json        # contest UUID + project metadata
 ├── requirements.txt
-├── README.md · EVALUATION_GUIDE.md · ARCHITECTURE.md · LICENSE-THIRDPARTY.md
+├── README.md · EVALUATION_GUIDE.md · ARCHITECTURE.md · HARDWARE.md · COLLABORATION.md · LICENSE-THIRDPARTY.md
 ├── demo.mp4 · report.json   # committed demo video + scorecard
 ├── dexassembly/
 │   ├── scene.py             # procedural MjSpec scene builder (+ LEAP attach)
@@ -263,7 +263,7 @@ to verify each claim** — nothing here is asserted without code/artifact you ca
 **1. Runnability.** One command (`python run_demo.py`) reproduces every artifact;
 **all assets are committed** (LEAP hand vendored under `assets/leap_hand/`), the scene
 is generated procedurally (no runtime downloads), and the run is deterministic.
-*Verify:* [`run_demo.py`](run_demo.py), [`validate.py`](validate.py) (36 checks),
+*Verify:* [`run_demo.py`](run_demo.py), [`validate.py`](validate.py) (38 checks),
 `python -m pytest tests` (41 tests), [`requirements.txt`](requirements.txt).
 
 **2. Depth of MuJoCo use.** `MjSpec` programmatic build with the hand **attached**
@@ -274,10 +274,11 @@ friction cones** (`impratio`); **20 position-servo actuators**; **4 cameras**;
 `nq=56`. Control is **only** via `data.ctrl` — **never `qpos` teleportation**.
 *Verify:* [`dexassembly/scene.py`](dexassembly/scene.py), [`scene.xml`](scene.xml).
 
-**3. Task design.** A graded **six-task** EV assembly/QA arena (3× colour-sort, an
+**3. Task design.** A graded **six-task** EV assembly/QA arena (2× colour-sort, an
 eye-in-hand inspect-and-sort, a tactile button test, a deformable-cable force
-inspection), each scored on **physical state** (placement error, press depth, cable
-deflection). *Verify:* [`dexassembly/tasks.py`](dexassembly/tasks.py),
+inspection, and a probe tool-use task), each scored on **physical state** (placement
+error, press depth, cable deflection, probe-switch travel). *Verify:*
+[`dexassembly/tasks.py`](dexassembly/tasks.py),
 [`report.json`](report.json).
 
 **4. Control.** Closed-loop FSM with **live-position perception**,
@@ -293,9 +294,9 @@ caging; single-finger button press; multi-finger deformable-cable manipulation.
 *Verify:* [`dexassembly/controllers.py`](dexassembly/controllers.py), the demo video.
 
 **6. Engineering quality.** Typed, documented Python package; config dataclasses;
-CLI; `validate.py`; ARCHITECTURE + EVALUATION guides; 41 tests; third-party
-attribution. *Verify:* [`ARCHITECTURE.md`](ARCHITECTURE.md),
-[`LICENSE-THIRDPARTY.md`](LICENSE-THIRDPARTY.md), `tests/`.
+CLI; `validate.py`; ARCHITECTURE + EVALUATION + **HARDWARE (sim-to-real)** guides; 41
+tests; third-party attribution. *Verify:* [`ARCHITECTURE.md`](ARCHITECTURE.md),
+[`HARDWARE.md`](HARDWARE.md), [`LICENSE-THIRDPARTY.md`](LICENSE-THIRDPARTY.md), `tests/`.
 
 **7. Presentation.** A narrated, multi-camera demo with a title card, a closing
 scorecard, a persistent **"real physics — no qpos teleport"** badge, live
@@ -305,7 +306,9 @@ subtitle track is exported. *Verify:* [`demo.mp4`](demo.mp4), `narration.srt`.
 **8. Innovation.** An **honestly-actuated** (no-`qpos`-teleport) dexterous cell,
 themed as a real EV assembly/QA station, that is at once a scored benchmark + a
 domain-randomized ablation, a narrated demo, and a labelled RGB-D dataset generator
-— built transparently with a documented human-AI workflow ([`COLLABORATION.md`](COLLABORATION.md)).
+— built against a **real control interface** with an honest sim-to-real channel
+mapping ([`HARDWARE.md`](HARDWARE.md)) and a documented human-AI workflow
+([`COLLABORATION.md`](COLLABORATION.md)).
 
 ---
 
@@ -314,7 +317,7 @@ domain-randomized ablation, a narrated demo, and a labelled RGB-D dataset genera
 本项目 **DexAssembly Cell** 是一个完全自包含的 MuJoCo 灵巧操作单元：一只 **16 自由度
 LEAP 灵巧手**安装在四轴笛卡尔龙门架上，在**闭环、带触觉反馈**的控制器驱动下，自主完成一个
 以**电动车产线总装与质检**为主题的分级多任务竞技场——零件分拣、手眼相机检视、诊断按钮按压、
-线束力觉检测、连接器插装。机器人**全程仅通过执行器（`data.ctrl`）驱动，绝不通过 `qpos`
+线束力觉检测、以及用细长探针工具触动隐藏式诊断微动开关。机器人**全程仅通过执行器（`data.ctrl`）驱动，绝不通过 `qpos`
 传送关节**，因此物体遵循重力、抓取必须靠手指真实闭合才能成立。运行 `python run_demo.py`
 即可一键复现：仿真、计分、带 HUD 的演示视频，以及一份带标签的 RGB-D 与状态/动作数据集。
 所有资源（含 LEAP 手）均已随提交一并包含，运行时无需任何下载。六项任务成功率 **100%**。
