@@ -1,11 +1,12 @@
 """Procedural MuJoCo scene builder for the DexAssembly Cell.
 
-The scene is a fixed Cartesian gantry (x / y / z slides + a wrist yaw hinge) with a
-16-DOF LEAP hand attached at the wrist, working over an instrumented bench with
-sortable parts, color bins, a probe-tool station, and spring-loaded inspection
-button.  The LEAP hand MJCF (DeepMind MuJoCo Menagerie, MIT licensed) is attached
-through :class:`mujoco.MjSpec` so the whole cell is generated from one builder and
-never depends on a runtime download.
+The scene is a 5-axis Cartesian gantry (x / y / z slides + wrist pitch + wrist yaw)
+with a 16-DOF LEAP hand attached at the wrist, working over an instrumented bench with
+sortable parts, color bins, a probe-tool station, and spring-loaded inspection button.
+The wrist pitch joint enables angled and side approaches in addition to the default
+top-down power grasp.  The LEAP hand MJCF (DeepMind MuJoCo Menagerie, MIT licensed) is
+attached through :class:`mujoco.MjSpec` so the whole cell is generated from one builder
+and never depends on a runtime download.
 
 Run ``python -m dexassembly.scene`` to (re)generate ``scene.xml`` next to the
 submission root and print a structural summary.
@@ -29,6 +30,7 @@ GANTRY_X_RANGE = (-0.28, 0.28)
 GANTRY_Y_RANGE = (-0.26, 0.26)
 GANTRY_Z_RANGE = (-0.34, 0.02)
 WRIST_YAW_RANGE = (-3.1416, 3.1416)
+WRIST_PITCH_RANGE = (-1.5708, 1.5708)  # ±90° — enables angled / side-approach grasps
 
 # The wrist frame sits this high; the z slide subtracts from it.
 GANTRY_HEIGHT = 0.46
@@ -44,7 +46,7 @@ HAND_ACTUATORS = (
     "lh_rf_mcp_act", "lh_rf_rot_act", "lh_rf_pip_act", "lh_rf_dip_act",
     "lh_th_cmc_act", "lh_th_axl_act", "lh_th_mcp_act", "lh_th_ipl_act",
 )
-GANTRY_ACTUATORS = ("gx_act", "gy_act", "gz_act", "wrist_act")
+GANTRY_ACTUATORS = ("gx_act", "gy_act", "gz_act", "wp_act", "wrist_act")
 
 
 @dataclass
@@ -186,7 +188,15 @@ def build_spec(config: SceneConfig | None = None) -> mujoco.MjSpec:
     gz.add_geom(name="gz_geom", type=mujoco.mjtGeom.mjGEOM_CYLINDER, size=[0.012, 0.05],
                 pos=[0, 0, -0.05], material="metal", mass=0.3)
 
-    wrist = gz.add_body(name="wrist", pos=[0, 0, -0.10])
+    # Wrist pitch: tilts the hand forward/backward — enables angled approach while the
+    # existing top-down tasks run at pitch=0 (identical behaviour to the prior 4-DOF chain).
+    wrist_p = gz.add_body(name="wrist_pitch", pos=[0, 0, -0.10])
+    wrist_p.add_joint(name="wrist_pitch", type=mujoco.mjtJoint.mjJNT_HINGE, axis=[0, 1, 0],
+                      range=list(WRIST_PITCH_RANGE))
+    wrist_p.add_geom(name="wp_geom", type=mujoco.mjtGeom.mjGEOM_CYLINDER, size=[0.018, 0.010],
+                     material="metal", mass=0.15)
+
+    wrist = wrist_p.add_body(name="wrist", pos=[0, 0, 0])
     wrist.add_joint(name="wrist_yaw", type=mujoco.mjtJoint.mjJNT_HINGE, axis=[0, 0, 1],
                     range=list(WRIST_YAW_RANGE))
     wrist.add_geom(name="wrist_geom", type=mujoco.mjtGeom.mjGEOM_CYLINDER, size=[0.02, 0.012],
@@ -234,6 +244,7 @@ def build_spec(config: SceneConfig | None = None) -> mujoco.MjSpec:
     _servo("gx_act", "gx", 2000, 80, GANTRY_X_RANGE)
     _servo("gy_act", "gy", 2000, 80, GANTRY_Y_RANGE)
     _servo("gz_act", "gz", 3000, 120, GANTRY_Z_RANGE)
+    _servo("wp_act", "wrist_pitch", 80, 4, WRIST_PITCH_RANGE)
     _servo("wrist_act", "wrist_yaw", 60, 3, WRIST_YAW_RANGE)
 
     # ----- parts -----

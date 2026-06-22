@@ -82,6 +82,7 @@ class GantryTarget:
     y: float
     z: float
     yaw: float = 0.0
+    pitch: float = 0.0  # wrist pitch (rad); 0 = palm-down (default top-down grasp)
 
 
 class CellController:
@@ -130,12 +131,13 @@ class CellController:
 
     # ----- commands -----
     def set_gantry_target(self, t: GantryTarget) -> None:
-        """Command the grasp centre toward world (x, y, z) and wrist to ``yaw``."""
+        """Command the grasp centre toward world (x, y, z), wrist pitch, and yaw."""
         off = self.grasp_site
         self.data.ctrl[self.gantry_act[0]] = np.clip(t.x - off[0], *self._crange(0))
         self.data.ctrl[self.gantry_act[1]] = np.clip(t.y - off[1], *self._crange(1))
         self.data.ctrl[self.gantry_act[2]] = np.clip(t.z - off[2], *self._crange(2))
-        self.data.ctrl[self.gantry_act[3]] = np.clip(t.yaw, *self._crange(3))
+        self.data.ctrl[self.gantry_act[3]] = np.clip(t.pitch, *self._crange(3))
+        self.data.ctrl[self.gantry_act[4]] = np.clip(t.yaw, *self._crange(4))
 
     def set_hand_pose(self, pose: str | np.ndarray, blend: float = 1.0) -> None:
         target = HAND_POSES[pose] if isinstance(pose, str) else np.asarray(pose)

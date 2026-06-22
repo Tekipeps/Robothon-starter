@@ -48,12 +48,15 @@ flowchart TD
 
 ## Control model
 
-The gantry is a pure Cartesian translation (`gx, gy, gz`) plus a wrist yaw. The
-world position of the grasp centre is therefore an **affine function** of the four
-gantry controls; `CellController` calibrates the constant offset once (from the
-closed-grasp fingertip convergence point) and inverts it, so a task can command a
-world `(x, y, z, yaw)` directly. The hand is commanded with five symbolic poses
-(`open, pregrasp, grasp, pinch, point`) mapped onto the 16 LEAP position servos.
+The gantry is a Cartesian translation (`gx, gy, gz`) plus a **wrist pitch** and a
+**wrist yaw** — five DOF total. At pitch=0 (the default for all current arena tasks)
+the world position of the grasp centre is an **affine function** of the three
+translational controls; `CellController` calibrates the constant offset once (from
+the closed-grasp fingertip convergence point) and inverts it, so a task can command
+a world `(x, y, z, pitch, yaw)` directly. The pitch joint enables angled and
+side-approach grasps without altering the existing top-down tasks. The hand is
+commanded with five symbolic poses (`open, pregrasp, grasp, pinch, point`) mapped
+onto the 16 LEAP position servos.
 
 Every task is a list of `Step`s. A step sets a gantry target (static, or a
 `target_fn` computed from live state) and/or a hand pose, then runs until a

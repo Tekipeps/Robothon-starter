@@ -56,7 +56,7 @@ def main() -> int:
         from dexassembly.scene import compile_scene
         model, _ = compile_scene()
         check("MuJoCo model compiles", True, f"nq={model.nq} nu={model.nu} nsensor={model.nsensor}")
-        check("20 actuators (4 gantry + 16 hand)", model.nu == 20, str(model.nu))
+        check("21 actuators (5 gantry + 16 hand)", model.nu == 21, str(model.nu))
         check("4 cameras", model.ncam == 4, str(model.ncam))
 
         def has(kind, name):

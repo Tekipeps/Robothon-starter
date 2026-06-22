@@ -20,9 +20,9 @@ recovery.
 - **It's closed-loop, and we prove it.** A domain-randomized **ablation** shows the
   adaptive controller (live-position perception + grasp recovery) beating an
   open-loop baseline **93% vs 67% — +27 pp**. That gap *is* the contribution.
-- **Depth + breadth in one package.** 20 actuators, **24 sensors** (6-axis wrist
+- **Depth + breadth in one package.** 21 actuators, **24 sensors** (6-axis wrist
   F/T, 4 fingertip touch, joint + button), a **deformable articulated cable**, 4
-  cameras, `nq=56` — and all four control modalities the rubric lists (scripted
+  cameras, `nq=57` — and all four control modalities the rubric lists (scripted
   autonomy, closed-loop policy, teleoperation, data collection).
 - **One command, no downloads.** `python run_demo.py` reproduces the video, a
   labelled RGB-D dataset, and the scorecard. The LEAP hand is vendored; the scene is
@@ -56,11 +56,11 @@ Domain-randomized grasp study (±12 mm / ±15%, 30 grasps/mode):
 | | |
 |---|---|
 | **End-effector** | LEAP Hand — 16 actuated DOF, 4 fingers (index/middle/ring + opposable thumb), per-joint position servos and joint-position sensors (MuJoCo Menagerie, MIT). |
-| **Arm** | Procedural 4-axis Cartesian gantry: prismatic X / Y / Z slides + a wrist-yaw hinge, each a position servo. Rock-solid, singularity-free reach over the bench. |
+| **Arm** | Procedural **5-axis** Cartesian gantry: prismatic X / Y / Z slides + a **wrist-pitch hinge** + a wrist-yaw hinge, each a position servo. Pitch enables angled and side-approach grasps; singularity-free reach over the bench. |
 | **Sensing** | 4 fingertip **touch sensors**, a **6-axis wrist force/torque sensor**, 16 hand joint encoders, a button-displacement sensor, and **4 cameras** (hero / top / side / eye-in-hand wrist). |
 | **Scene** | Instrumented bench with 3 colour bins, 3 sortable parts, a spring-loaded inspection button, a recessed probe-actuated diagnostic switch, a graspable probe tool, and a **deformable articulated cable** — all built in MJCF from primitives. |
 
-Model size: `nq=56, nv=52, nu=20` actuators, `nsensor=24`, `ncam=4`, `ngeom=142`.
+Model size: `nq=57, nv=53, nu=21` actuators, `nsensor=24`, `ncam=4`, `ngeom=143`.
 
 ---
 
@@ -144,7 +144,7 @@ camera — for perception/data use.)
 
 ## Core features
 
-- 16-DOF dexterous hand on a 4-DOF gantry, attached via `MjSpec` — **20 actuators, 24 sensors, 4 cameras**.
+- 16-DOF dexterous hand on a **5-DOF gantry** (x/y/z + pitch + yaw), attached via `MjSpec` — **21 actuators, 24 sensors, 4 cameras**.
 - **Honest, fully-actuated physics** — control is *only* through `data.ctrl`; no `qpos` teleportation, so objects obey gravity and grasps hold through real contact.
 - **Closed-loop, tactile-aware** control: contact-triggered button press, live-position grasp targeting, runtime held-offset correction, and **grasp-failure detection + recovery**.
 - **Six-task graded arena** with quantitative per-task scoring and an aggregate 0–100 score.
@@ -270,9 +270,9 @@ is generated procedurally (no runtime downloads), and the run is deterministic.
 via `frame.attach_body`; a **deformable articulated cable** (6 hinge joints); a
 **6-axis wrist force/torque** sensor + **4 fingertip touch** sensors + a button
 displacement sensor (**24 sensors**); a spring-loaded **slide joint**; **elliptic
-friction cones** (`impratio`); **20 position-servo actuators**; **4 cameras**;
-`nq=56`. Control is **only** via `data.ctrl` — **never `qpos` teleportation**.
-*Verify:* [`dexassembly/scene.py`](dexassembly/scene.py), [`scene.xml`](scene.xml).
+friction cones** (`impratio`); **21 position-servo actuators** (5-DOF gantry + 16
+LEAP); **4 cameras**; `nq=57`. Control is **only** via `data.ctrl` — **never `qpos`
+teleportation**. *Verify:* [`dexassembly/scene.py`](dexassembly/scene.py), [`scene.xml`](scene.xml).
 
 **3. Task design.** A graded **six-task** EV assembly/QA arena (2× colour-sort, an
 eye-in-hand inspect-and-sort, a tactile button test, a deformable-cable force
