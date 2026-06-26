@@ -1,0 +1,28 @@
+{
+  "n_objectives": 7,
+  "n_success": 7,
+  "score_0_100": 100.0,
+  "waypoints_reached": [
+    "approach",
+    "crest_berm",
+    "rubble",
+    "station_b",
+    "finish"
+  ],
+  "panels_scanned": [
+    "panel_A",
+    "panel_B"
+  ],
+  "sim_time_s": 48.1,
+  "wall_time_s": 581.78,
+  "objectives": {
+    "inspect_panel_A": true,
+    "crest_berm": true,
+    "push_recovery": true,
+    "cross_rubble": true,
+    "inspect_panel_B": true,
+    "reach_finish": true,
+    "stayed_upright": true
+  },
+  "video": "C:\\Users\\Tekena\\Documents\\learning\\Robothon-starter\\submissions\\sentinel-patrol\\outputs\\sentinel_demo.mp4"
+}
