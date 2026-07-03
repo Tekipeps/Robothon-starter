@@ -31,6 +31,7 @@ def main() -> int:
                 "registration.json", "report.json", "demo.mp4",
                 "sentinel/__init__.py", "sentinel/scene.py", "sentinel/gait.py",
                 "sentinel/controller.py", "sentinel/engine.py", "sentinel/hud.py",
+                "sentinel/proprio.py", "sentinel/datalog.py",
                 "assets/unitree_go1/go1.xml", "assets/unitree_go1/LICENSE"):
         check(f"file present: {rel}", (ROOT / rel).exists())
 
@@ -61,6 +62,9 @@ def main() -> int:
         for s in ("panel_A_target", "panel_B_target"):
             check(f"inspection target: {s}", has(mujoco.mjtObj.mjOBJ_SITE, s))
         check("finish pad present", has(mujoco.mjtObj.mjOBJ_GEOM, "finish_pad"))
+        for s in ("imu_gyro", "imu_accel", "imu_vel",
+                  "touch_FR", "touch_FL", "touch_RR", "touch_RL"):
+            check(f"sensor present: {s}", has(mujoco.mjtObj.mjOBJ_SENSOR, s))
     except Exception as exc:  # noqa: BLE001
         check("course compiles", False, str(exc))
 

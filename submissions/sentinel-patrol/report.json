@@ -13,8 +13,27 @@
     "panel_A",
     "panel_B"
   ],
-  "sim_time_s": 48.1,
-  "wall_time_s": 581.78,
+  "sim_time_s": 45.39,
+  "wall_time_s": 1302.53,
+  "reflex": {
+    "triggered": true,
+    "events_s": [
+      3.36,
+      4.778,
+      14.764,
+      17.052,
+      19.542,
+      22.048,
+      27.492,
+      29.086,
+      30.158,
+      40.012,
+      42.012
+    ],
+    "shove_onset_s": 3.352,
+    "latency_ms": 8.0,
+    "push_force_N": 100.0
+  },
   "objectives": {
     "inspect_panel_A": true,
     "crest_berm": true,
@@ -24,5 +43,49 @@
     "reach_finish": true,
     "stayed_upright": true
   },
-  "video": "C:\\Users\\Tekena\\Documents\\learning\\Robothon-starter\\submissions\\sentinel-patrol\\outputs\\sentinel_demo.mp4"
+  "telemetry": {
+    "steps": 22693,
+    "duration_s": 45.38,
+    "rate_hz": 500.0,
+    "fields": {
+      "t": [
+        22693
+      ],
+      "qpos": [
+        22693,
+        19
+      ],
+      "qvel": [
+        22693,
+        18
+      ],
+      "ctrl": [
+        22693,
+        12
+      ],
+      "sensordata": [
+        22693,
+        13
+      ],
+      "phase": [
+        22693
+      ],
+      "forward": [
+        22693
+      ],
+      "yaw_cmd": [
+        22693
+      ],
+      "brace": [
+        22693
+      ]
+    },
+    "brace_active_frac": 0.2535,
+    "npz": "telemetry.npz"
+  },
+  "scan_snapshots": [
+    "outputs/scan_panel_A.png",
+    "outputs/scan_panel_B.png"
+  ],
+  "video": "outputs/sentinel_demo.mp4"
 }

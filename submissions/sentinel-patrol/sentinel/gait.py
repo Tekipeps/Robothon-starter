@@ -55,6 +55,11 @@ class GaitParams:
     swing_height: float = 0.08  # peak foot lift during swing (m)
     freq: float = 2.2           # gait cycles per second
     turn_gain: float = 0.6      # how strongly yaw_rate skews the per-side stride
+    brace_crouch: float = 0.05  # ride-height drop at full brace (m)
+    # Stance-widening (hip abduction) was tried as part of the brace and measured
+    # *worse* than a pure crouch — the abduction breaks the planar-IK stance mid
+    # push — so the brace keeps the hips at zero and only crouches.
+    brace_hip: float = 0.0      # hip abduction at full brace (rad); 0 = crouch-only
 
 
 class TrotGait:
@@ -85,17 +90,23 @@ class TrotGait:
         return fx, fz
 
     def step(self, data: mujoco.MjData, dt: float,
-             forward: float = 1.0, yaw: float = 0.0) -> None:
+             forward: float = 1.0, yaw: float = 0.0, brace: float = 0.0) -> None:
         """Advance the gait clock by ``dt`` and write the 12 joint targets.
 
         ``forward`` in [0,1] scales stride (walk speed); ``yaw`` in [-1,1] skid-steers
         (positive = turn left).  ``forward=0, yaw=0`` holds a stable stand.
+
+        ``brace`` in [0,1] is the disturbance-reflex level (from
+        :class:`~sentinel.proprio.DisturbanceReflex`): it crouches the ride
+        height, dropping the centre of mass so a lateral hit is absorbed instead
+        of toppling the robot.
         """
         self._t += dt
         moving = abs(forward) > 1e-3 or abs(yaw) > 1e-3
+        crouch = self.p.brace_crouch * brace
         for lg in LEGS:
             if not moving:
-                fx, fz = 0.0, self.p.stand_z          # planted stand
+                fx, fz = 0.0, self.p.stand_z + crouch     # planted stand
             else:
                 phase = (self._t * self.p.freq + _PHASE[lg]) % 1.0
                 # Skid-steer as a per-side stride: ``forward`` strides all legs
@@ -105,7 +116,8 @@ class TrotGait:
                 # used to turn and face an inspection target.
                 stride = self.p.stride * (forward + self.p.turn_gain * yaw * _SIDE[lg])
                 fx, fz = self._foot(phase, stride)
+                fz += crouch
             thigh, calf = _leg_ik(fx, fz)
-            data.ctrl[self.act[lg][0]] = 0.0
+            data.ctrl[self.act[lg][0]] = -_SIDE[lg] * self.p.brace_hip * brace
             data.ctrl[self.act[lg][1]] = thigh
             data.ctrl[self.act[lg][2]] = calf

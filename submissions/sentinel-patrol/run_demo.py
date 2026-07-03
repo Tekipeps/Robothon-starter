@@ -1,11 +1,13 @@
 """Sentinel — autonomous quadruped inspection patrol: one-command demo runner.
 
 Runs the scored patrol mission and renders a narrated HUD video (chase camera, live
-objective checklist, route mini-map, and an onboard head-camera picture-in-picture
-during each inspection), then writes ``report.json``.  This single command
-reproduces every artifact in the submission.
+objective checklist, foot-contact dots, route mini-map, and an onboard head-camera
+picture-in-picture during each inspection), then writes ``report.json``, the
+full-rate telemetry dataset (``outputs/telemetry.npz``), and a labelled head-cam
+snapshot per panel scan.  This single command reproduces every artifact in the
+submission.
 
-    python run_demo.py            # full demo video + report.json
+    python run_demo.py            # full demo video + report.json + telemetry
     python run_demo.py --quick    # fast low-res smoke run
     python run_demo.py --help
 """
@@ -19,6 +21,7 @@ from pathlib import Path
 import imageio
 import mujoco
 
+from sentinel.datalog import TelemetryLog
 from sentinel.engine import Mission, StepInfo
 from sentinel.hud import draw_hud, draw_pip, scorecard, title_card
 from sentinel.scene import CourseConfig
@@ -26,18 +29,18 @@ from sentinel.scene import CourseConfig
 ROOT = Path(__file__).resolve().parent
 OUT = ROOT / "outputs"
 TITLE = "SENTINEL"
-BADGE = "REAL PHYSICS · ctrl-ONLY"
+BADGE = "REAL PHYSICS · SENSOR-DRIVEN"
 
 # Narration caption per mission phase / current target (drawn at the bottom of frame).
 CAPTIONS = {
     "approach": "Patrol leg 1 — trotting the route under closed-loop heading control.",
     "crest_berm": "Crossing the ramp berm — the trot keeps the trunk level over the incline.",
-    "rubble": "Traversing the rubble field — uneven footing handled by foot-contact alone.",
+    "rubble": "Rubble field — the IMU reflex auto-crouches over the rough ground.",
     "station_b": "Approaching inspection station B.",
     "finish": "Final leg — heading for the finish pad.",
 }
 INSPECT_CAP = "INSPECTION — pivoting in place to face the panel and scanning (head cam, inset)."
-SHOVE_CAP = "DISTURBANCE — a 70 N lateral shove; the gait staggers and recovers upright."
+SHOVE_CAP = "DISTURBANCE — 100 N lateral shove; the IMU feels it in 8 ms and braces."
 
 
 def run(args: argparse.Namespace) -> dict:
@@ -56,9 +59,10 @@ def run(args: argparse.Namespace) -> dict:
         subtitle="Autonomous Quadruped Inspection Patrol",
         bullets=[
             "Unitree Go1 (12 position actuators) — a hand-built trot gait, ctrl-only",
+            "Onboard IMU + foot touch sensors: an 8 ms proprioceptive brace reflex",
+            "The reflex stretches shove recovery from 70 N (passive) to 100 N",
             "Closed-loop waypoint navigation across a ramp berm + rubble field",
-            "Turn-in-place inspections (onboard head cam) + 70 N shove recovery",
-            "Honest physics: the robot walks by real foot-ground contact, never qpos",
+            "Full 500 Hz state-action-sensor dataset logged every run",
         ],
         footer="Robothon 2026 · Faraday Future MuJoCo Hackathon",
     )
@@ -66,9 +70,20 @@ def run(args: argparse.Namespace) -> dict:
         writer.append_data(intro)
 
     step_every = max(1, int(round((1.0 / mission.model.opt.timestep) / args.fps)))
-    state = {"n": 0, "last": None}
+    state = {"n": 0, "last": None, "scanned": set()}
+    telemetry = TelemetryLog(mission.model)
 
     def on_step(info: StepInfo) -> None:
+        telemetry.record(mission.data, t=info.t, phase=info.phase,
+                         forward=info.forward, yaw_cmd=info.yaw_cmd, brace=info.brace)
+
+        # labelled head-cam snapshot the moment each panel scan completes
+        for panel in ("panel_A", "panel_B"):
+            if info.objectives.get(f"inspect_{panel}") and panel not in state["scanned"]:
+                state["scanned"].add(panel)
+                renderer.update_scene(mission.data, camera="head")
+                imageio.imwrite(str(OUT / f"scan_{panel}.png"), renderer.render())
+
         state["n"] += 1
         if state["n"] % step_every:
             return
@@ -81,6 +96,7 @@ def run(args: argparse.Namespace) -> dict:
             frame, title=TITLE, badge=BADGE, phase=info.phase,
             forward=info.forward, yaw=info.yaw_cmd, objectives=info.objectives,
             progress=info.progress, route_xy=route_xy, robot_xy=info.pos, caption=cap,
+            feet=info.feet, brace=info.brace,
         )
         if info.phase == "INSPECT":
             renderer.update_scene(mission.data, camera="head")
@@ -89,6 +105,9 @@ def run(args: argparse.Namespace) -> dict:
         state["last"] = frame
 
     report = mission.run(on_step=on_step)
+    report["telemetry"] = telemetry.save(OUT / "telemetry.npz",
+                                         OUT / "telemetry_summary.json")
+    report["scan_snapshots"] = sorted(f"outputs/scan_{p}.png" for p in state["scanned"])
 
     if state["last"] is not None:
         for _ in range(args.fps // 2):
@@ -106,7 +125,7 @@ def run(args: argparse.Namespace) -> dict:
         writer.append_data(card)
     writer.close()
 
-    report["video"] = str(OUT / args.output)
+    report["video"] = f"outputs/{args.output}"
     (ROOT / "report.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     return report
 

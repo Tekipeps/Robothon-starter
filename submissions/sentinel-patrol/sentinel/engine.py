@@ -26,6 +26,7 @@ import numpy as np
 
 from .controller import WaypointFollower, trunk_yaw, _wrap
 from .gait import TrotGait
+from .proprio import DisturbanceReflex, Proprioception
 from .scene import CourseConfig, compile_scene
 
 UPRIGHT_Z = 0.16        # trunk height below this = the robot has fallen
@@ -46,6 +47,8 @@ class StepInfo:
     progress: float
     fell: bool
     objectives: dict = field(default_factory=dict)
+    brace: float = 0.0
+    feet: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -68,6 +71,8 @@ class Mission:
             mujoco.mj_name2id(self.model, mujoco.mjtObj.mjOBJ_KEY, "home"))
         self.gait = TrotGait(self.model)
         self.follower = WaypointFollower(self.cfg.waypoints)
+        self.proprio = Proprioception(self.model)
+        self.reflex = DisturbanceReflex()
 
     # ----- helpers -----
     def _pos(self) -> np.ndarray:
@@ -87,7 +92,7 @@ class Mission:
 
         scanned: list[str] = []
         crossed = {"berm": False, "rubble": False}
-        push_done = {"fired": False, "t_end": -1.0, "survived": True}
+        push_done = {"fired": False, "t0": -1.0, "t_end": -1.0, "survived": True}
         ever_fell = [False]
 
         phase = "PATROL"
@@ -111,6 +116,7 @@ class Mission:
             d.xfrc_applied[self._trunk, :] = 0.0
             if not push_done["fired"] and pos[0] > self.cfg.push_at_x:
                 push_done["fired"] = True
+                push_done["t0"] = t
                 push_done["t_end"] = t + self.cfg.push_duration
             if push_done["fired"] and t < push_done["t_end"]:
                 d.xfrc_applied[self._trunk, :3] = self.cfg.push_force
@@ -140,7 +146,16 @@ class Mission:
             else:
                 forward, yaw_cmd = 0.0, 0.0
 
-            self.gait.step(d, dt, forward=forward, yaw=yaw_cmd)
+            # --- proprioceptive brace reflex: the IMU feels the hit and the gait
+            #     crouches while it keeps stepping (the step pattern is what
+            #     catches the body).  Triggering is suppressed while the
+            #     controller itself commands an aggressive pivot (reafference
+            #     gating); it has no privileged knowledge of the scripted shove.
+            self_induced = phase == "INSPECT" or abs(yaw_cmd) > 0.5
+            brace = self.reflex.update(t, dt, float(self.proprio.accel(d)[1]),
+                                       suppress=self_induced)
+
+            self.gait.step(d, dt, forward=forward, yaw=yaw_cmd, brace=brace)
             mujoco.mj_step(m, d)
 
             if self._fallen():
@@ -164,13 +179,19 @@ class Mission:
                     target=(self.follower.target.name if self.follower.target else "—"),
                     inspecting=scan_target, progress=min(1.0, self.follower.idx
                                                          / max(1, len(self.cfg.waypoints))),
-                    fell=self._fallen(), objectives=live_obj))
+                    fell=self._fallen(), objectives=live_obj,
+                    brace=brace, feet=self.proprio.foot_contacts(d)))
 
             if ever_fell[0] or (self.follower.done and phase == "PATROL"):
                 break
 
         objectives = live_obj
         n_pass = sum(objectives.values())
+        # reflex latency: time from shove onset to the IMU-triggered brace
+        lat_ms = None
+        after = [e for e in self.reflex.events if e >= push_done["t0"] - 1e-9]
+        if push_done["fired"] and after:
+            lat_ms = round(1000.0 * (after[0] - push_done["t0"]), 1)
         return {
             "n_objectives": len(objectives),
             "n_success": n_pass,
@@ -179,5 +200,12 @@ class Mission:
             "panels_scanned": scanned,
             "sim_time_s": round(float(d.time), 2),
             "wall_time_s": round(time.time() - wall0, 2),
+            "reflex": {
+                "triggered": self.reflex.triggered,
+                "events_s": self.reflex.events,
+                "shove_onset_s": round(push_done["t0"], 3) if push_done["fired"] else None,
+                "latency_ms": lat_ms,
+                "push_force_N": float(-np.asarray(self.cfg.push_force)[1]),
+            },
             "objectives": objectives,
         }

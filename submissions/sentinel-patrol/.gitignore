@@ -1,5 +1,8 @@
 __pycache__/
 *.pyc
+.pytest_cache/
 outputs/
-_*.py
-_*.png
+# scratch files live at the submission root only; the old un-anchored `_*.py`
+# silently excluded sentinel/__init__.py from the repo
+/_*.py
+/_*.png

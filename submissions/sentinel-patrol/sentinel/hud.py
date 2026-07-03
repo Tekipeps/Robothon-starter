@@ -55,7 +55,8 @@ def _check(d, cx, cy, ok, r=9, pending_dim=True):
 
 def draw_hud(frame: np.ndarray, *, title: str, badge: str, phase: str,
              forward: float, yaw: float, objectives: dict, progress: float,
-             route_xy, robot_xy, caption: str = "") -> np.ndarray:
+             route_xy, robot_xy, caption: str = "",
+             feet: dict | None = None, brace: float = 0.0) -> np.ndarray:
     """Composite the live HUD onto a rendered RGB frame."""
     img = Image.fromarray(frame).convert("RGBA")
     W, H = img.size
@@ -82,13 +83,27 @@ def draw_hud(frame: np.ndarray, *, title: str, badge: str, phase: str,
         d.text((px + 42, yy + 1), name.replace("_", " "), font=f_b,
                fill=(_FG if ok else _DIM))
 
-    # phase + drive bars (bottom-left)
+    # phase + drive bars + proprioception (bottom-left)
     by = H - 96
     d.rectangle([18, by, 318, H - 18], fill=(*_BG, 165))
     pcol = _WARN if phase == "SHOVE" else (_ACCENT if phase == "INSPECT" else _OK)
     d.text((34, by + 10), f"STATE: {phase}", font=f_h, fill=pcol)
-    _bar(d, 34, by + 44, 270, "drive", forward, _OK)
-    _bar(d, 34, by + 66, 270, "turn", (yaw + 1) / 2, _ACCENT)
+    if brace > 0.05:                       # IMU reflex active — amber brace chip
+        bw2 = d.textlength("BRACE", font=f_s)
+        d.rectangle([196, by + 10, 206 + bw2 + 10, by + 32], fill=(*_WARN, 70))
+        d.text((206, by + 12), "BRACE", font=f_s, fill=_WARN)
+    _bar(d, 34, by + 44, 200, "drive", forward, _OK)
+    _bar(d, 34, by + 66, 200, "turn", (yaw + 1) / 2, _ACCENT)
+    if feet:                               # live touch-sensor contact dots
+        d.text((246, by + 40), "FEET", font=_font(12), fill=_DIM)
+        for i, foot in enumerate(("FL", "FR", "RL", "RR")):
+            fx = 250 + (i % 2) * 26
+            fy = by + 56 + (i // 2) * 20
+            on = bool(feet.get(foot, False))
+            if on:
+                d.ellipse([fx, fy, fx + 12, fy + 12], fill=_OK)
+            else:
+                d.ellipse([fx, fy, fx + 12, fy + 12], outline=_DIM, width=2)
 
     # route mini-map (bottom-right)
     _minimap(d, W - 250, H - 120, 232, 100, route_xy, robot_xy, f_s)

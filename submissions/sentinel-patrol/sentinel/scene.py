@@ -61,11 +61,13 @@ class CourseConfig:
     inspect_at: dict = field(default_factory=lambda: {
         "approach": "panel_A", "station_b": "panel_B"})
 
-    # A lateral shove applied to the trunk on the flat approach (disturbance test):
-    # 70 N for 0.15 s staggers the robot ~11 cm but the trot recovers; 85 N topples.
+    # A lateral shove applied to the trunk on the flat approach (disturbance test).
+    # The gait's passive envelope is ~70 N (85 N topples it); with the IMU-triggered
+    # crouch reflex the same patrol absorbs 100 N — chosen mid-plateau (90–110 N all
+    # recover, 120 N is the reflex's limit).
     push_at_x: float = 0.70
-    push_force: tuple[float, float, float] = (0.0, -70.0, 0.0)  # N, lateral (-y)
-    push_duration: float = 0.15                                 # s
+    push_force: tuple[float, float, float] = (0.0, -100.0, 0.0)  # N, lateral (-y)
+    push_duration: float = 0.15                                  # s
 
     @staticmethod
     def default() -> "CourseConfig":
@@ -133,6 +135,27 @@ def _add_inspection(world: mujoco.MjsBody, insp: Inspection) -> None:
                                                      insp.rgba[2], 0.0])
 
 
+def _add_sensors(spec: mujoco.MjSpec) -> None:
+    """Onboard sensor suite, attached to the Go1's own sites.
+
+    An IMU triad (gyro + accelerometer + velocimeter) on the trunk ``imu`` site
+    feeds the disturbance-brace reflex, and a touch sensor on each foot site
+    reports real foot-ground contact force (the HUD's contact dots and the
+    telemetry log read these).  Everything the controller "feels" comes from
+    these sensors — it never peeks at privileged simulator state for the reflex.
+    """
+    site = mujoco.mjtObj.mjOBJ_SITE
+    spec.add_sensor(name="imu_gyro", type=mujoco.mjtSensor.mjSENS_GYRO,
+                    objtype=site, objname="imu")
+    spec.add_sensor(name="imu_accel", type=mujoco.mjtSensor.mjSENS_ACCELEROMETER,
+                    objtype=site, objname="imu")
+    spec.add_sensor(name="imu_vel", type=mujoco.mjtSensor.mjSENS_VELOCIMETER,
+                    objtype=site, objname="imu")
+    for foot in ("FR", "FL", "RR", "RL"):
+        spec.add_sensor(name=f"touch_{foot}", type=mujoco.mjtSensor.mjSENS_TOUCH,
+                        objtype=site, objname=foot)
+
+
 def build_spec(cfg: CourseConfig | None = None) -> mujoco.MjSpec:
     cfg = cfg or CourseConfig.default()
     spec = mujoco.MjSpec.from_file(str(GO1_XML))
@@ -169,6 +192,7 @@ def build_spec(cfg: CourseConfig | None = None) -> mujoco.MjSpec:
     trunk.add_camera(name="chase", pos=[-1.1, -1.3, 0.7], mode=mujoco.mjtCamLight.mjCAMLIGHT_TRACKCOM,
                      xyaxes=[0.76, -0.65, 0, 0.3, 0.35, 0.88])
     world.add_camera(name="overview", pos=[2.3, -3.4, 2.6], xyaxes=[1, 0, 0, 0, 0.6, 0.8])
+    _add_sensors(spec)
     return spec
 
 
@@ -180,4 +204,4 @@ def compile_scene(cfg: CourseConfig | None = None):
 if __name__ == "__main__":
     m, _ = compile_scene()
     print(f"sentinel course compiled: nq={m.nq} nu={m.nu} ngeom={m.ngeom} "
-          f"ncam={m.ncam} nsite={m.nsite}")
+          f"ncam={m.ncam} nsite={m.nsite} nsensor={m.nsensor}")

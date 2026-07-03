@@ -36,6 +36,22 @@ first**, one rung at a time, and only moved up when the rung was solid:
 5. **Mission** — state machine for turn-and-scan inspections + a scripted shove. The
    first shove (85 N) toppled the robot; an empirical sweep found **70 N** staggers it
    ~11 cm but recovers — so the disturbance test is honest *and* survivable.
+6. **Senses, then a reflex** (the v1.1 upgrade) — real MuJoCo sensors (IMU triad + 4
+   foot touch) were compiled into the model, and a disturbance reflex built on them.
+   This one took *four measured iterations* to get right:
+   - The obvious trigger (lateral **velocity**) was too slow — ~120 ms into a 150 ms
+     shove. A 25 ms-filtered **acceleration** channel detects in 8 ms because the
+     trot's own foot-impact spikes filter away while a real hit is sustained.
+   - An oracle-timed A/B across brace strategies showed **crouch-only wins**;
+     stance-widening — the intuitive choice — actually topples the robot mid-push,
+     and stop-and-brace removes the stepping recovery that catches the body.
+   - A latch bug (the trigger kept re-arming while the signal stayed high, pinning
+     the brace at zero *during the hit*) was found by comparing oracle vs. live runs.
+   - Pivot-in-place false-triggered the reflex, so it is suppressed while the
+     controller commands an aggressive turn (**reafference gating**).
+
+   Net result, all from printed sweeps: the survivable shove went from **70 N passive
+   to 100 N braced** (mid-plateau of 90–110 N; 120 N still topples).
 
 Each rung was a runnable check the human could see, not a claim.
 
